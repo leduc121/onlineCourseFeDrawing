@@ -14,6 +14,7 @@ import { Checkout } from './pages/Checkout';
 import { CustomerDashboard } from './pages/CustomerDashboard';
 import { InstructorDashboard } from './pages/InstructorDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { AboutUs } from './pages/AboutUs';
 export function App() {
   return <AuthProvider>
     <CartProvider>
@@ -25,6 +26,7 @@ export function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/about" element={<AboutUs />} />
             <Route path="/courses" element={<CourseCatalog />} />
             <Route path="/course/:id" element={<CourseDetail />} />
 

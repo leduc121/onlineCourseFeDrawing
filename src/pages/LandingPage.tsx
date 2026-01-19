@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Hero } from '../components/Hero';
 import { CourseGrid } from '../components/CourseGrid';
 import { Testimonials } from '../components/Testimonials';
@@ -53,9 +54,9 @@ export function LandingPage() {
           </h3>
           <ul className="space-y-4 text-sm text-gray-300">
             <li>
-              <a href="#" className="hover:text-white transition-colors">
+              <Link to="/about" className="hover:text-white transition-colors">
                 About Us
-              </a>
+              </Link>
             </li>
             <li>
               <a href="#" className="hover:text-white transition-colors">
