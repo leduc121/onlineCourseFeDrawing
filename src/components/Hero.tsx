@@ -59,7 +59,7 @@ export function Hero() {
         ease: 'easeOut'
       }} className="lg:col-span-7 order-1 lg:order-2 relative">
         <div className="relative aspect-[4/5] md:aspect-[16/10] lg:aspect-[4/5] overflow-hidden rounded-lg shadow-2xl bg-orange-50">
-          <img src="/hero.jpg" alt="Happy child painting" className="w-full h-full object-cover transition-all duration-1000 ease-out" />
+          <img src={`${import.meta.env.BASE_URL}hero.jpg`} alt="Happy child painting" className="w-full h-full object-cover transition-all duration-1000 ease-out" />
 
           <div className="absolute bottom-8 left-8 text-white z-10 hidden md:block">
             <p className="text-sm uppercase tracking-widest mb-1 opacity-90 font-medium">
