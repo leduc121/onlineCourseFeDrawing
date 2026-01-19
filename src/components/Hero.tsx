@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import heroImage from '../assets/hero.jpg';
+
 export function Hero() {
   return <section className="relative min-h-[90vh] flex items-center justify-center pt-20 pb-12 px-4 overflow-hidden">
     <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
@@ -45,8 +47,6 @@ export function Hero() {
           </a>
         </div>
       </motion.div>
-
-      {/* Image Content - Magazine Cover Style (Right side, spans 7 cols) */}
       <motion.div initial={{
         opacity: 0,
         scale: 0.95
@@ -59,7 +59,7 @@ export function Hero() {
         ease: 'easeOut'
       }} className="lg:col-span-7 order-1 lg:order-2 relative">
         <div className="relative aspect-[4/5] md:aspect-[16/10] lg:aspect-[4/5] overflow-hidden rounded-lg shadow-2xl bg-orange-50">
-          <img src={`${import.meta.env.BASE_URL}hero.jpg`} alt="Happy child painting" className="w-full h-full object-cover transition-all duration-1000 ease-out" />
+          <img src={heroImage} alt="Happy child painting" className="w-full h-full object-cover transition-all duration-1000 ease-out" />
 
           <div className="absolute bottom-8 left-8 text-white z-10 hidden md:block">
             <p className="text-sm uppercase tracking-widest mb-1 opacity-90 font-medium">
