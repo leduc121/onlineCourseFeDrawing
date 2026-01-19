@@ -22,6 +22,7 @@ export function AboutUs() {
     return (
         <div className="min-h-screen bg-[#faf8f5] px-4 py-20">
             <div className="max-w-4xl mx-auto">
+                {/* Header Section */}
                 <motion.div
                     initial="hidden"
                     animate="visible"
@@ -32,7 +33,7 @@ export function AboutUs() {
                         variants={itemVariants}
                         className="text-5xl md:text-7xl font-serif font-bold text-editorial-text mb-6"
                     >
-                        Our Story
+                        About Us
                     </motion.h1>
                     <motion.p
                         variants={itemVariants}
@@ -42,6 +43,24 @@ export function AboutUs() {
                     </motion.p>
                 </motion.div>
 
+                {/* Our Mission Section - NOW FIRST */}
+                <motion.section
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    variants={containerVariants}
+                    className="mb-24 text-center bg-white p-12 rounded-xl border border-editorial-border shadow-sm"
+                >
+                    <motion.h2 variants={itemVariants} className="text-3xl font-serif font-bold mb-6 text-editorial-accent">Our Mission</motion.h2>
+                    <motion.p variants={itemVariants} className="text-2xl font-serif text-editorial-text leading-relaxed max-w-3xl mx-auto italic">
+                        "To ensure that every child's innate creativity is nurtured, celebrated, and never lost."
+                    </motion.p>
+                    <motion.p variants={itemVariants} className="mt-6 text-editorial-subtle">
+                        We strive to create a world where art is not just a subject, but a language for expression and confidence.
+                    </motion.p>
+                </motion.section>
+
+                {/* Our Story Section - NOW SECOND */}
                 <motion.section
                     initial="hidden"
                     whileInView="visible"
@@ -50,12 +69,12 @@ export function AboutUs() {
                     className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-24"
                 >
                     <motion.div variants={itemVariants} className="order-2 md:order-1">
-                        <h2 className="text-3xl font-serif font-bold mb-4">Born from Passion</h2>
+                        <h2 className="text-3xl font-serif font-bold mb-4">Our Story</h2>
                         <p className="text-editorial-text leading-relaxed mb-4">
-                            ArtAcademy began with a simple idea: every child is born an artist. Our mission is to ensure they never lose that spark.
+                            ArtAcademy began with a simple idea born from passion. Founded in 2026 by a group of educators and artists, we wanted to create a space where technique meets imagination.
                         </p>
                         <p className="text-editorial-text leading-relaxed">
-                            Founded in 2020 by a group of educators and artists, we wanted to create a space where technique meets imagination. We believe that art education shouldn't just be about following instructions, but about finding one's unique voice.
+                            We believe that art education shouldn't just be about following instructions, but about finding one's unique voice. From our first small workshop to a global community, our journey has always been about the students.
                         </p>
                     </motion.div>
                     <motion.div variants={itemVariants} className="order-1 md:order-2 h-[400px] overflow-hidden rounded-lg shadow-xl">
@@ -67,6 +86,7 @@ export function AboutUs() {
                     </motion.div>
                 </motion.section>
 
+                {/* Our Values Section - REMAINS LAST */}
                 <motion.section
                     initial="hidden"
                     whileInView="visible"
