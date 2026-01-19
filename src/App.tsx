@@ -16,45 +16,45 @@ import { InstructorDashboard } from './pages/InstructorDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 export function App() {
   return <AuthProvider>
-      <CartProvider>
-        <Router>
-          <div className="min-h-screen bg-[#faf8f5]">
-            <Navigation />
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/courses" element={<CourseCatalog />} />
-              <Route path="/course/:id" element={<CourseDetail />} />
+    <CartProvider>
+      <Router basename={import.meta.env.BASE_URL}>
+        <div className="min-h-screen bg-[#faf8f5]">
+          <Navigation />
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/courses" element={<CourseCatalog />} />
+            <Route path="/course/:id" element={<CourseDetail />} />
 
-              {/* Protected Customer Routes */}
-              <Route path="/checkout" element={<ProtectedRoute allowedRoles={['customer']}>
-                    <Checkout />
-                  </ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['customer']}>
-                    <CustomerDashboard />
-                  </ProtectedRoute>} />
+            {/* Protected Customer Routes */}
+            <Route path="/checkout" element={<ProtectedRoute allowedRoles={['customer']}>
+              <Checkout />
+            </ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['customer']}>
+              <CustomerDashboard />
+            </ProtectedRoute>} />
 
-              {/* Protected Instructor Routes */}
-              <Route path="/instructor/dashboard" element={<ProtectedRoute allowedRoles={['instructor']}>
-                    <InstructorDashboard />
-                  </ProtectedRoute>} />
+            {/* Protected Instructor Routes */}
+            <Route path="/instructor/dashboard" element={<ProtectedRoute allowedRoles={['instructor']}>
+              <InstructorDashboard />
+            </ProtectedRoute>} />
 
-              {/* Protected Admin Routes */}
-              <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}>
-                    <AdminDashboard />
-                  </ProtectedRoute>} />
+            {/* Protected Admin Routes */}
+            <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>} />
 
-              {/* Staff routes would go here similarly */}
-              <Route path="/staff/dashboard" element={<ProtectedRoute allowedRoles={['staff']}>
-                    <div className="p-12 text-center">
-                      Staff Dashboard Placeholder
-                    </div>
-                  </ProtectedRoute>} />
-            </Routes>
-          </div>
-        </Router>
-      </CartProvider>
-    </AuthProvider>;
+            {/* Staff routes would go here similarly */}
+            <Route path="/staff/dashboard" element={<ProtectedRoute allowedRoles={['staff']}>
+              <div className="p-12 text-center">
+                Staff Dashboard Placeholder
+              </div>
+            </ProtectedRoute>} />
+          </Routes>
+        </div>
+      </Router>
+    </CartProvider>
+  </AuthProvider>;
 }
