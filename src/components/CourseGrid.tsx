@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 interface Course {
@@ -58,9 +59,9 @@ export function CourseGrid() {
         <h2 className="text-4xl md:text-5xl font-serif text-editorial-text">
           Curated Curriculum
         </h2>
-        <a href="#" className="hidden md:flex items-center gap-2 text-sm font-medium hover:text-editorial-accent transition-colors">
+        <Link to="/courses" className="hidden md:flex items-center gap-2 text-sm font-medium hover:text-editorial-accent transition-colors">
           View Full Catalogue <ArrowUpRight size={16} />
-        </a>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 auto-rows-[400px]">
@@ -101,9 +102,9 @@ export function CourseGrid() {
       </div>
 
       <div className="mt-12 text-center md:hidden">
-        <a href="#" className="inline-flex items-center gap-2 text-sm font-medium border-b border-editorial-text pb-1">
+        <Link to="/courses" className="inline-flex items-center gap-2 text-sm font-medium border-b border-editorial-text pb-1">
           View Full Catalogue <ArrowUpRight size={16} />
-        </a>
+        </Link>
       </div>
     </div>
   </section>;

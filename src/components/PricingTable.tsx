@@ -1,5 +1,7 @@
 import { Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 export function PricingTable() {
@@ -50,8 +52,9 @@ export function PricingTable() {
             onClick={() => handlePlanSelect('little-artist')}
             className="w-full py-3 border border-editorial-text text-editorial-text hover:bg-editorial-text hover:text-white transition-all duration-300 text-sm font-medium tracking-wide"
           >
+          <Link to="/register" className="block text-center w-full py-3 border border-editorial-text text-editorial-text hover:bg-editorial-text hover:text-white transition-all duration-300 text-sm font-medium tracking-wide">
             Start Creating
-          </button>
+          </Link>
         </motion.div>
 
         {/* Recommended Plan */}
@@ -88,8 +91,9 @@ export function PricingTable() {
             onClick={() => handlePlanSelect('creative-studio')}
             className="w-full py-3 bg-editorial-text text-white hover:bg-editorial-accent transition-all duration-300 text-sm font-medium tracking-wide"
           >
+          <Link to="/register" className="block text-center w-full py-3 bg-editorial-text text-white hover:bg-editorial-accent transition-all duration-300 text-sm font-medium tracking-wide">
             Join the Studio
-          </button>
+          </Link>
         </motion.div>
 
         {/* Premium Plan */}
@@ -122,8 +126,9 @@ export function PricingTable() {
             onClick={() => handlePlanSelect('masterpiece-pro')}
             className="w-full py-3 border border-editorial-text text-editorial-text hover:bg-editorial-text hover:text-white transition-all duration-300 text-sm font-medium tracking-wide"
           >
+          <Link to="/register" className="block text-center w-full py-3 border border-editorial-text text-editorial-text hover:bg-editorial-text hover:text-white transition-all duration-300 text-sm font-medium tracking-wide">
             Go Pro
-          </button>
+          </Link>
         </motion.div>
       </div>
     </div>

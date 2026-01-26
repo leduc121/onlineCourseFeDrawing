@@ -31,9 +31,9 @@ export function LandingPage() {
           </h3>
           <ul className="space-y-4 text-sm text-gray-300">
             <li>
-              <a href="/courses" className="hover:text-white transition-colors">
+              <Link to="/courses" className="hover:text-white transition-colors">
                 Browse Courses
-              </a>
+              </Link>
             </li>
             <li>
               <a href="#instructors" className="hover:text-white transition-colors">
