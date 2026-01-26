@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import heroImage from '../assets/hero.jpg';
@@ -33,7 +34,7 @@ export function Hero() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-          <a href="/courses">
+          <Link to="/courses">
             <motion.button whileHover={{
               scale: 1.02
             }} whileTap={{
@@ -41,7 +42,7 @@ export function Hero() {
             }} className="px-8 py-4 bg-editorial-text text-[#faf8f5] text-sm tracking-wide font-medium hover:bg-editorial-accent transition-colors duration-300 flex items-center gap-2">
               Explore Catalogue <ArrowRight size={16} />
             </motion.button>
-          </a>
+          </Link>
           <a href="#philosophy" className="text-sm font-medium border-b border-editorial-text/30 pb-1 hover:border-editorial-text transition-colors">
             Our Philosophy
           </a>
