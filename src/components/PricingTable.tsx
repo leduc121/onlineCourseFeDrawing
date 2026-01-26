@@ -1,7 +1,14 @@
-import React from 'react';
-import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+
 export function PricingTable() {
+  const navigate = useNavigate();
+
+  const handlePlanSelect = (planId: string) => {
+    navigate(`/membership-checkout?plan=${planId}`);
+  };
+
   return <section id="pricing" className="py-24 px-4 bg-[#faf8f5] border-t border-editorial-border">
     <div className="max-w-7xl mx-auto">
       <div className="text-center mb-16">
@@ -39,7 +46,10 @@ export function PricingTable() {
               <span>{feature}</span>
             </li>)}
           </ul>
-          <button className="w-full py-3 border border-editorial-text text-editorial-text hover:bg-editorial-text hover:text-white transition-all duration-300 text-sm font-medium tracking-wide">
+          <button
+            onClick={() => handlePlanSelect('little-artist')}
+            className="w-full py-3 border border-editorial-text text-editorial-text hover:bg-editorial-text hover:text-white transition-all duration-300 text-sm font-medium tracking-wide"
+          >
             Start Creating
           </button>
         </motion.div>
@@ -74,7 +84,10 @@ export function PricingTable() {
               <span>{feature}</span>
             </li>)}
           </ul>
-          <button className="w-full py-3 bg-editorial-text text-white hover:bg-editorial-accent transition-all duration-300 text-sm font-medium tracking-wide">
+          <button
+            onClick={() => handlePlanSelect('creative-studio')}
+            className="w-full py-3 bg-editorial-text text-white hover:bg-editorial-accent transition-all duration-300 text-sm font-medium tracking-wide"
+          >
             Join the Studio
           </button>
         </motion.div>
@@ -105,7 +118,10 @@ export function PricingTable() {
               <span>{feature}</span>
             </li>)}
           </ul>
-          <button className="w-full py-3 border border-editorial-text text-editorial-text hover:bg-editorial-text hover:text-white transition-all duration-300 text-sm font-medium tracking-wide">
+          <button
+            onClick={() => handlePlanSelect('masterpiece-pro')}
+            className="w-full py-3 border border-editorial-text text-editorial-text hover:bg-editorial-text hover:text-white transition-all duration-300 text-sm font-medium tracking-wide"
+          >
             Go Pro
           </button>
         </motion.div>

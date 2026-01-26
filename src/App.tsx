@@ -11,6 +11,7 @@ import { Register } from './pages/Register';
 import { CourseCatalog } from './pages/CourseCatalog';
 import { CourseDetail } from './pages/CourseDetail';
 import { Checkout } from './pages/Checkout';
+import { MembershipCheckout } from './pages/MembershipCheckout';
 import { CustomerDashboard } from './pages/CustomerDashboard';
 import { InstructorDashboard } from './pages/InstructorDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
@@ -36,6 +37,9 @@ export function App() {
             </ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['customer']}>
               <CustomerDashboard />
+            </ProtectedRoute>} />
+            <Route path="/membership-checkout" element={<ProtectedRoute allowedRoles={['customer']}>
+              <MembershipCheckout />
             </ProtectedRoute>} />
 
             {/* Protected Instructor Routes */}
