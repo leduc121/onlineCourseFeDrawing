@@ -5,6 +5,7 @@ import { CourseGrid } from '../components/CourseGrid';
 import { Testimonials } from '../components/Testimonials';
 import { InstructorFeature } from '../components/InstructorFeature';
 import { PricingTable } from '../components/PricingTable';
+import { ContactSection } from '../components/ContactSection';
 export function LandingPage() {
   return <div className="min-h-screen bg-editorial-bg text-editorial-text font-sans selection:bg-editorial-accent/20">
     <main>
@@ -13,6 +14,7 @@ export function LandingPage() {
       <Testimonials />
       <InstructorFeature />
       <PricingTable />
+      <ContactSection />
     </main>
 
     <footer className="bg-[#1a1a1a] text-[#faf8f5] py-16 px-4">
@@ -59,7 +61,7 @@ export function LandingPage() {
               </Link>
             </li>
             <li>
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="#contact" className="hover:text-white transition-colors">
                 Contact
               </a>
             </li>
