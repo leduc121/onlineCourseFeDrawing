@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 export function PricingTable() {
@@ -39,9 +40,9 @@ export function PricingTable() {
               <span>{feature}</span>
             </li>)}
           </ul>
-          <button className="w-full py-3 border border-editorial-text text-editorial-text hover:bg-editorial-text hover:text-white transition-all duration-300 text-sm font-medium tracking-wide">
+          <Link to="/register" className="block text-center w-full py-3 border border-editorial-text text-editorial-text hover:bg-editorial-text hover:text-white transition-all duration-300 text-sm font-medium tracking-wide">
             Start Creating
-          </button>
+          </Link>
         </motion.div>
 
         {/* Recommended Plan */}
@@ -74,9 +75,9 @@ export function PricingTable() {
               <span>{feature}</span>
             </li>)}
           </ul>
-          <button className="w-full py-3 bg-editorial-text text-white hover:bg-editorial-accent transition-all duration-300 text-sm font-medium tracking-wide">
+          <Link to="/register" className="block text-center w-full py-3 bg-editorial-text text-white hover:bg-editorial-accent transition-all duration-300 text-sm font-medium tracking-wide">
             Join the Studio
-          </button>
+          </Link>
         </motion.div>
 
         {/* Premium Plan */}
@@ -105,9 +106,9 @@ export function PricingTable() {
               <span>{feature}</span>
             </li>)}
           </ul>
-          <button className="w-full py-3 border border-editorial-text text-editorial-text hover:bg-editorial-text hover:text-white transition-all duration-300 text-sm font-medium tracking-wide">
+          <Link to="/register" className="block text-center w-full py-3 border border-editorial-text text-editorial-text hover:bg-editorial-text hover:text-white transition-all duration-300 text-sm font-medium tracking-wide">
             Go Pro
-          </button>
+          </Link>
         </motion.div>
       </div>
     </div>
