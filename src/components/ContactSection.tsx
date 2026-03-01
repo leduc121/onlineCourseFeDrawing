@@ -46,7 +46,7 @@ export function ContactSection() {
                                     <p className="text-editorial-subtle mb-1">Come say hello at our studio.</p>
                                     <p className="text-editorial-text">
                                         Lot E2a-7, D1 Street, High-Tech Park<br />
-                                        , Long Thanh My Ward, Thu Duc City
+                                        ,Long Thanh My Ward, Thu Duc City
                                     </p>
                                 </div>
                             </div>

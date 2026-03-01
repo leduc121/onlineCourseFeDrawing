@@ -1,5 +1,5 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
-export type UserRole = 'customer' | 'instructor' | 'staff' | 'admin';
+export type UserRole = 'customer' | 'instructor' | 'staff' | 'admin' | 'student';
 export interface User {
   id: string;
   name: string;
@@ -32,12 +32,13 @@ export function AuthProvider({
   }, []);
   const login = (email: string, role: UserRole) => {
     // Mock login - in production this would verify credentials
+    const seed = role === 'student' ? 'micah' : email;
     const mockUser: User = {
       id: Math.random().toString(36).substr(2, 9),
-      name: email.split('@')[0],
+      name: role === 'student' ? 'Little Artist' : email.split('@')[0],
       email,
       role,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`
     };
     setUser(mockUser);
     localStorage.setItem('editorial_user', JSON.stringify(mockUser));
@@ -53,8 +54,8 @@ export function AuthProvider({
     isAuthenticated: !!user,
     isLoading
   }}>
-      {children}
-    </AuthContext.Provider>;
+    {children}
+  </AuthContext.Provider>;
 }
 export function useAuth() {
   const context = useContext(AuthContext);

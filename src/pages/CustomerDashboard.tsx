@@ -58,6 +58,52 @@ export function CustomerDashboard() {
 
       <WeeklyStreak />
 
+      {/* Kids Management Section (New) */}
+      <div className="mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-serif font-bold text-[#2d2d2d]">
+            Manage Kids & Assignments
+          </h2>
+          <Button variant="outline" size="sm">
+            + Add New Kid Account
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Mock Kid Profile */}
+          <div className="bg-white p-6 rounded-xl border-2 border-dashed border-[#ff8a80]/30 flex items-center gap-4">
+            <img
+              src="https://api.dicebear.com/7.x/avataaars/svg?seed=micah"
+              alt="Kid Avatar"
+              className="w-16 h-16 rounded-full bg-yellow-50"
+            />
+            <div>
+              <h3 className="font-bold text-lg text-[#2d2d2d]">Micah (Student)</h3>
+              <p className="text-sm text-gray-500 mb-2">2 Courses Assigned</p>
+              <div className="flex gap-2">
+                <span className="text-xs bg-[#E0F2F1] text-[#00695C] px-2 py-1 rounded-full font-bold">
+                  Active
+                </span>
+                <button className="text-xs text-[#5D5FEF] font-bold hover:underline">
+                  Assign Course
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Mock Kid Profile 2 */}
+          <div className="bg-white p-6 rounded-xl border border-[#2d2d2d]/10 flex items-center gap-4 opacity-60">
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+              <span className="text-2xl">+</span>
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-gray-400">Add Child</h3>
+              <p className="text-sm text-gray-400">Create account for your kid</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <h2 className="text-2xl font-serif font-bold text-[#2d2d2d] mb-6">
         Continue Learning
       </h2>

@@ -13,6 +13,7 @@ import { CourseDetail } from './pages/CourseDetail';
 import { Checkout } from './pages/Checkout';
 import { MembershipCheckout } from './pages/MembershipCheckout';
 import { CustomerDashboard } from './pages/CustomerDashboard';
+import { StudentDashboard } from './pages/StudentDashboard';
 import { InstructorDashboard } from './pages/InstructorDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AboutUs } from './pages/AboutUs';
@@ -40,6 +41,11 @@ export function App() {
             </ProtectedRoute>} />
             <Route path="/membership-checkout" element={<ProtectedRoute allowedRoles={['customer']}>
               <MembershipCheckout />
+            </ProtectedRoute>} />
+
+            {/* Protected Student Routes */}
+            <Route path="/student/dashboard" element={<ProtectedRoute allowedRoles={['student']}>
+              <StudentDashboard />
             </ProtectedRoute>} />
 
             {/* Protected Instructor Routes */}

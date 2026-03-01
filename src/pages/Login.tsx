@@ -115,6 +115,21 @@ export function Login() {
           Continue with Google
         </button>
 
+        <button
+          type="button"
+          className="w-full flex items-center justify-center gap-3 px-4 py-2 mt-3 border-2 border-dashed border-[#5D5FEF] rounded-md shadow-sm bg-[#F0F7FF] text-sm font-bold text-[#5D5FEF] hover:bg-[#E0EEFF] focus:outline-none transition-colors"
+          onClick={() => {
+            setIsLoading(true);
+            setTimeout(() => {
+              login('kid@example.com', 'student');
+              setIsLoading(false);
+              navigate('/student/dashboard');
+            }, 800);
+          }}
+        >
+          🎨 Login as Student (Test Mode)
+        </button>
+
         <div className="text-center text-sm">
           <span className="text-gray-600">Don't have an account? </span>
           <Link to="/register" className="font-medium text-[#ff8a80] hover:text-[#e07856]">

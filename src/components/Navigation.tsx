@@ -24,6 +24,8 @@ export function Navigation() {
         return '/staff/dashboard';
       case 'instructor':
         return '/instructor/dashboard';
+      case 'student':
+        return '/student/dashboard';
       default:
         return '/dashboard';
     }
@@ -47,26 +49,32 @@ export function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/courses" className="text-[#2d2d2d] hover:text-[#ff8a80] font-medium transition-colors">
-              Courses
-            </Link>
-            <Link to="/instructors" className="text-[#2d2d2d] hover:text-[#ff8a80] font-medium transition-colors">
-              Instructors
-            </Link>
-            <Link to="/about" className="text-[#2d2d2d] hover:text-[#ff8a80] font-medium transition-colors">
-              About
-            </Link>
+            {user?.role !== 'student' && (
+              <>
+                <Link to="/courses" className="text-[#2d2d2d] hover:text-[#ff8a80] font-medium transition-colors">
+                  Courses
+                </Link>
+                <Link to="/instructors" className="text-[#2d2d2d] hover:text-[#ff8a80] font-medium transition-colors">
+                  Instructors
+                </Link>
+                <Link to="/about" className="text-[#2d2d2d] hover:text-[#ff8a80] font-medium transition-colors">
+                  About
+                </Link>
+              </>
+            )}
 
             <div className="flex items-center space-x-6">
-              {/* Cart Icon - Visible to all users */}
-              <Link to="/checkout" className="relative text-[#2d2d2d] hover:text-[#ff8a80]">
-                <ShoppingBag className="w-6 h-6" />
-                {itemCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-[#ff8a80] text-[#2d2d2d] text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
-                    {itemCount}
-                  </span>
-                )}
-              </Link>
+              {/* Cart Icon - Visible to all users except Student */}
+              {user?.role !== 'student' && (
+                <Link to="/checkout" className="relative text-[#2d2d2d] hover:text-[#ff8a80]">
+                  <ShoppingBag className="w-6 h-6" />
+                  {itemCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-[#ff8a80] text-[#2d2d2d] text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                      {itemCount}
+                    </span>
+                  )}
+                </Link>
+              )}
 
               {/* Auth Section */}
               {user ? (

@@ -101,7 +101,7 @@ export function MembershipCheckout() {
 
                         <div className="mt-8 bg-purple-50 p-4 rounded-lg flex gap-3 text-purple-800 text-sm">
                             <Lock size={20} className="shrink-0" />
-                            <p>Secure checkout powered by Stripe. Your payment information is encrypted.</p>
+                            <p>Secure checkout powered by VNPAY. Your payment information is encrypted.</p>
                         </div>
                     </div>
 
