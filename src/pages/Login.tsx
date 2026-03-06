@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth, UserRole } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Select } from '../components/ui/Select';
 export function Login() {
   const {
     login
@@ -11,17 +10,21 @@ export function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('customer');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      login(email, role);
+    try {
+      await login(email, 'customer', password);
       setIsLoading(false);
+      
+      const stored = localStorage.getItem('editorial_user');
+      const loggedUserRole = stored ? JSON.parse(stored).role : 'customer';
+
       // Redirect based on role
-      switch (role) {
+      switch (loggedUserRole) {
         case 'admin':
           navigate('/admin/dashboard');
           break;
@@ -31,10 +34,16 @@ export function Login() {
         case 'instructor':
           navigate('/instructor/dashboard');
           break;
+        case 'student':
+          navigate('/student/dashboard');
+          break;
         default:
           navigate('/dashboard');
       }
-    }, 1000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      setIsLoading(false);
+    }
   };
   return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center px-4 py-12">
     <div className="max-w-md w-full space-y-8">
@@ -48,24 +57,16 @@ export function Login() {
       </div>
 
       <form className="mt-8 space-y-6 bg-white p-8 border-2 border-[#2d2d2d]/5 shadow-xl" onSubmit={handleSubmit}>
+        {error && (
+          <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+            {error}
+          </div>
+        )}
         <div className="space-y-4">
           <Input label="Email address" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
 
           <Input label="Password" type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
 
-          <Select label="I am a..." value={role} onChange={e => setRole(e.target.value as UserRole)} options={[{
-            value: 'customer',
-            label: 'Student / Parent'
-          }, {
-            value: 'instructor',
-            label: 'Instructor'
-          }, {
-            value: 'staff',
-            label: 'Staff Member'
-          }, {
-            value: 'admin',
-            label: 'Administrator'
-          }]} />
         </div>
 
         <Button type="submit" className="w-full" isLoading={isLoading}>
@@ -88,7 +89,7 @@ export function Login() {
             // Mock Google Login
             setIsLoading(true);
             setTimeout(() => {
-              login('user@gmail.com', role);
+              login('user@gmail.com', 'customer');
               setIsLoading(false);
               navigate('/dashboard');
             }, 1000);
