@@ -182,7 +182,9 @@ export function InstructorDashboard() {
                       <Link to={`/course/${course.id}`} className="text-[#2d2d2d] hover:text-[#ff8a80] mr-4">
                         View
                       </Link>
-                      {/* Can add edit page later */}
+                      <Link to={`/instructor/edit-course/${course.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">
+                        Edit
+                      </Link>
                       <button onClick={() => handleDelete(course.id)} className="text-red-600 hover:text-red-900">
                         Delete
                       </button>

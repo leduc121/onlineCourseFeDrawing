@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
@@ -17,6 +16,7 @@ import { StudentDashboard } from './pages/StudentDashboard';
 import { InstructorDashboard } from './pages/InstructorDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AboutUs } from './pages/AboutUs';
+import { ManageCourse } from './pages/ManageCourse';
 export function App() {
   return <AuthProvider>
     <CartProvider>
@@ -51,6 +51,12 @@ export function App() {
             {/* Protected Instructor Routes */}
             <Route path="/instructor/dashboard" element={<ProtectedRoute allowedRoles={['instructor']}>
               <InstructorDashboard />
+            </ProtectedRoute>} />
+            <Route path="/instructor/create-course" element={<ProtectedRoute allowedRoles={['instructor']}>
+              <ManageCourse />
+            </ProtectedRoute>} />
+            <Route path="/instructor/edit-course/:id" element={<ProtectedRoute allowedRoles={['instructor']}>
+              <ManageCourse />
             </ProtectedRoute>} />
 
             {/* Protected Admin Routes */}
