@@ -1,86 +1,53 @@
-import React, { useState } from 'react';
-import { Search, Filter } from 'lucide-react';
-import { Input } from '../components/ui/Input';
-import { Select } from '../components/ui/Select';
+import { useState, useEffect } from 'react';
+import { Search } from 'lucide-react';
 import { CourseCard, CourseProps } from '../components/CourseCard';
-// Mock Data
-const MOCK_COURSES: CourseProps[] = [{
-  id: '1',
-  title: 'Watercolor Wonderland: Basics for Kids',
-  instructor: 'Ms. Lan Anh',
-  price: 29,
-  rating: 4.8,
-  students: 120,
-  duration: '4 weeks',
-  image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-  ageGroup: '5-7',
-  category: 'Watercolor'
-}, {
-  id: '2',
-  title: 'Digital Art Heroes: Character Design',
-  instructor: 'Mr. Minh Tuan',
-  price: 49,
-  rating: 4.9,
-  students: 85,
-  duration: '6 weeks',
-  image: 'https://images.unsplash.com/photo-1615184697985-c9bde1b07da7?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-  ageGroup: '8-10',
-  category: 'Digital Art'
-}, {
-  id: '3',
-  title: 'Sketching Nature: Outdoor Adventures',
-  instructor: 'Ms. Thu Ha',
-  price: 35,
-  rating: 4.7,
-  students: 200,
-  duration: '5 weeks',
-  image: 'https://images.unsplash.com/photo-1515462277126-2dd0c162007a?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-  ageGroup: '11-13',
-  category: 'Drawing'
-}, {
-  id: '4',
-  title: 'Acrylic Magic: Painting Landscapes',
-  instructor: 'Mr. Hoang',
-  price: 45,
-  rating: 4.6,
-  students: 150,
-  duration: '6 weeks',
-  image: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-  ageGroup: '8-10',
-  category: 'Acrylic'
-}, {
-  id: '5',
-  title: 'Fun with Clay: Sculpting Basics',
-  instructor: 'Ms. Mai',
-  price: 39,
-  rating: 4.9,
-  students: 95,
-  duration: '4 weeks',
-  image: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-  ageGroup: '5-7',
-  category: 'Sculpture'
-}, {
-  id: '6',
-  title: 'Anime Style Drawing Masterclass',
-  instructor: 'Mr. Ken',
-  price: 55,
-  rating: 4.8,
-  students: 300,
-  duration: '8 weeks',
-  image: 'https://images.unsplash.com/photo-1560131914-15949d21226b?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-  ageGroup: '11-13',
-  category: 'Drawing'
-}];
+import { coursesApi } from '../api';
+
 export function CourseCatalog() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAge, setSelectedAge] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const filteredCourses = MOCK_COURSES.filter(course => {
+  const [courses, setCourses] = useState<CourseProps[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true);
+        const res = await coursesApi.getPublished(1, 100);
+        if (res.data?.data?.items) {
+          const mappedCourses: CourseProps[] = res.data.data.items.map((c: any) => ({
+            id: c.id,
+            title: c.title,
+            instructor: c.instructorName || 'Unknown Instructor',
+            price: c.price,
+            rating: 5.0, // Defaults or calculate properly if provided by backend
+            students: 0,
+            duration: c.totalDurationMinutes ? `${Math.round(c.totalDurationMinutes / 60)} hrs` : 'N/A',
+            image: c.thumbnailUrl || 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+            ageGroup: 'Kids', // Example mapping
+            category: c.categoryName || 'General'
+          }));
+          setCourses(mappedCourses);
+        }
+      } catch (error) {
+        console.error("Error fetching courses:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
+  const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) || course.instructor.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAge = selectedAge === 'all' || course.ageGroup === selectedAge;
+    // Simplify age filtering for now since backend may not have ageGroup
+    const matchesAge = selectedAge === 'all' || course.ageGroup.includes(selectedAge);
     const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory;
     return matchesSearch && matchesAge && matchesCategory;
   });
+
   return <div className="min-h-screen bg-[#faf8f5] pb-20">
       {/* Header */}
       <div className="bg-[#2d2d2d] text-[#faf8f5] py-16">
@@ -126,23 +93,29 @@ export function CourseCatalog() {
           </div>
         </div>
 
-        {/* Results */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredCourses.map(course => <CourseCard key={course.id} course={course} />)}
-        </div>
+        {isLoading ? (
+          <div className="text-center py-20">Loading courses...</div>
+        ) : (
+          <>
+            {/* Results */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredCourses.map(course => <CourseCard key={course.id} course={course} />)}
+            </div>
 
-        {filteredCourses.length === 0 && <div className="text-center py-20">
-            <p className="text-xl text-gray-500 font-serif">
-              No courses found matching your criteria.
-            </p>
-            <button onClick={() => {
-          setSearchTerm('');
-          setSelectedAge('all');
-          setSelectedCategory('all');
-        }} className="mt-4 text-[#ff8a80] font-medium hover:underline">
-              Clear all filters
-            </button>
-          </div>}
+            {filteredCourses.length === 0 && <div className="text-center py-20">
+                <p className="text-xl text-gray-500 font-serif">
+                  No courses found matching your criteria.
+                </p>
+                <button onClick={() => {
+              setSearchTerm('');
+              setSelectedAge('all');
+              setSelectedCategory('all');
+            }} className="mt-4 text-[#ff8a80] font-medium hover:underline">
+                  Clear all filters
+                </button>
+              </div>}
+          </>
+        )}
       </div>
     </div>;
 }

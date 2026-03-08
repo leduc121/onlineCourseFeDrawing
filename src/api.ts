@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Ensure this matches your backend URL
-const API_URL = 'http://localhost:5176/api';
+const API_URL = 'http://localhost:5215/api';
 
 const api = axios.create({
     baseURL: API_URL,
@@ -29,6 +29,26 @@ export const streakApi = {
     getStreak: () => api.get('/Streak'),
     recordVisit: () => api.post('/Streak/visit', {}),
     recordWatch: (minutes: number) => api.post('/Streak/watch', minutes) // Check if backend expects int or object
+};
+
+export const usersApi = {
+    getAll: (pageIndex = 1, pageSize = 10) => api.get(`/Users?pageIndex=${pageIndex}&pageSize=${pageSize}`),
+};
+
+export const coursesApi = {
+    getAll: (pageIndex = 1, pageSize = 10) => api.get(`/Courses?pageIndex=${pageIndex}&pageSize=${pageSize}`),
+    getPendingReview: (pageIndex = 1, pageSize = 10) => api.get(`/Courses/pending-review?pageIndex=${pageIndex}&pageSize=${pageSize}`),
+    approve: (id: string) => api.post(`/Courses/${id}/approve`),
+    reject: (id: string, reason: string) => api.post(`/Courses/${id}/reject`, { RejectionReason: reason }),
+    getPublished: (pageIndex = 1, pageSize = 10) => api.get(`/Courses/published?pageIndex=${pageIndex}&pageSize=${pageSize}`),
+    getById: (id: string) => api.get(`/Courses/${id}`),
+    getMyCourses: (pageIndex = 1, pageSize = 10) => api.get(`/Courses/my-courses?pageIndex=${pageIndex}&pageSize=${pageSize}`),
+    createFull: (data: any) => api.post('/Courses', data),
+    update: (id: string, data: any) => api.put(`/Courses/${id}`, data),
+    updateSections: (id: string, data: any) => api.patch(`/Courses/${id}/sections`, data),
+    delete: (id: string) => api.delete(`/Courses/${id}`),
+    submitForReview: (id: string) => api.post(`/Courses/${id}/submit-for-review`),
+    publish: (id: string) => api.post(`/Courses/${id}/publish`),
 };
 
 export default api;
