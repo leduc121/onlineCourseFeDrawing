@@ -194,7 +194,9 @@ export function InstructorDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         course.status === 'Published' ? 'bg-green-100 text-green-800' :
+                        course.status === 'Approved' ? 'bg-blue-100 text-blue-800' :
                         course.status === 'PendingReview' ? 'bg-yellow-100 text-yellow-800' :
+                        course.status === 'Rejected' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {course.status}
@@ -212,6 +214,11 @@ export function InstructorDashboard() {
                       <Link to={`/instructor/edit-course/${course.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">
                         Edit
                       </Link>
+                      {course.status === 'Approved' && (
+                        <button onClick={() => handlePublish(course.id)} className="text-green-600 hover:text-green-900 mr-4 font-semibold">
+                          Publish
+                        </button>
+                      )}
                       <button onClick={() => handleDelete(course.id)} className="text-red-600 hover:text-red-900">
                         Delete
                       </button>

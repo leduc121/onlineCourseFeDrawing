@@ -21,8 +21,9 @@ api.interceptors.request.use((config) => {
 
 export const authApi = {
     login: (data: any) => api.post('/Auth/login', data),
-    register: (data: any) => api.post('/Auth/register', data), // Assuming you have register
+    register: (data: any) => api.post('/Auth/register', data),
     googleLogin: (tokenId: string) => api.post('/Auth/google-login', { tokenId }),
+    getMe: () => api.get('/Auth/me'),
 };
 
 export const streakApi = {
@@ -52,7 +53,10 @@ export const coursesApi = {
 };
 
 export const categoriesApi = {
-    getAll: (pageIndex = 1, pageSize = 100) => api.get(`/Categories?pageIndex=${pageIndex}&pageSize=${pageSize}`)
+    getAll: (pageIndex = 1, pageSize = 100) => api.get(`/Categories?pageIndex=${pageIndex}&pageSize=${pageSize}`),
+    create: (data: any) => api.post('/Categories', data),
+    update: (id: string, data: any) => api.put(`/Categories/${id}`, data),
+    delete: (id: string) => api.delete(`/Categories/${id}`)
 };
 
 export const studentProfilesApi = {

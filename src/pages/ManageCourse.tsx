@@ -197,7 +197,9 @@ export function ManageCourse() {
                    description: l.description,
                    videoUrl: l.videoUrl,
                    durationMinute: Number(l.durationMinute),
-                   isTrial: l.isTrial
+                   isTrial: l.isTrial,
+                   quiz: null,
+                   assignment: null
                }))
             }))
          };

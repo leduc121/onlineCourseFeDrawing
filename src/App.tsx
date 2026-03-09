@@ -17,6 +17,8 @@ import { InstructorDashboard } from './pages/InstructorDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AboutUs } from './pages/AboutUs';
 import { ManageCourse } from './pages/ManageCourse';
+import { Profile } from './pages/Profile';
+
 export function App() {
   return <AuthProvider>
     <CartProvider>
@@ -64,11 +66,15 @@ export function App() {
               <AdminDashboard />
             </ProtectedRoute>} />
 
-            {/* Staff routes would go here similarly */}
             <Route path="/staff/dashboard" element={<ProtectedRoute allowedRoles={['staff']}>
               <div className="p-12 text-center">
                 Staff Dashboard Placeholder
               </div>
+            </ProtectedRoute>} />
+
+            {/* Profile Page - common for all logged in users */}
+            <Route path="/profile" element={<ProtectedRoute allowedRoles={['customer', 'instructor', 'staff', 'admin', 'student']}>
+              <Profile />
             </ProtectedRoute>} />
           </Routes>
         </div>

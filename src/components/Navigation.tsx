@@ -81,7 +81,10 @@ export function Navigation() {
                 <div className="flex items-center space-x-4">
                   <Link to={getDashboardLink()} className="flex items-center space-x-2 text-[#2d2d2d] hover:text-[#ff8a80]">
                     <User className="w-5 h-5" />
-                    <span className="font-medium">{user.name}</span>
+                    <span className="font-medium">Dashboard</span>
+                  </Link>
+                  <Link to="/profile" className="flex items-center space-x-2 text-[#2d2d2d] hover:text-[#ff8a80]">
+                    <span className="font-medium">Profile</span>
                   </Link>
                   <button onClick={handleLogout} className="text-gray-500 hover:text-[#2d2d2d]">
                     <LogOut className="w-5 h-5" />
@@ -125,6 +128,9 @@ export function Navigation() {
               <>
                 <Link to={getDashboardLink()} className="block text-[#2d2d2d] font-medium py-2">
                   Dashboard
+                </Link>
+                <Link to="/profile" className="block text-[#2d2d2d] font-medium py-2">
+                  My Profile
                 </Link>
                 <button onClick={handleLogout} className="block text-red-600 font-medium py-2">
                   Log out
