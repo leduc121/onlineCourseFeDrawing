@@ -161,8 +161,10 @@ export function ManageCourse() {
                    title: l.title,
                    description: l.description,
                    videoUrl: l.videoUrl,
-                   durationSeconds: Number(l.durationSeconds),
-                   isTrial: l.isTrial
+                   durationMinute: Math.round(Number(l.durationSeconds) / 60),
+                   isTrial: l.isTrial,
+                   quiz: null,
+                   assignment: null
                }))
             }))
          };

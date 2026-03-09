@@ -54,6 +54,19 @@ export function InstructorDashboard() {
     }
   };
 
+  const handlePublish = async (id: string) => {
+    if (confirm('Publish this course? It will be visible to all users.')) {
+      try {
+        await coursesApi.publish(id);
+        alert('Course published successfully!');
+        fetchMyCourses();
+      } catch (error: any) {
+        console.error("Error publishing course", error);
+        alert(error.response?.data?.message || "Failed to publish course.");
+      }
+    }
+  };
+
   return <div className="min-h-screen bg-[#faf8f5] py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-12">
@@ -172,7 +185,9 @@ export function InstructorDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         course.status === 'Published' ? 'bg-green-100 text-green-800' :
+                        course.status === 'Approved' ? 'bg-blue-100 text-blue-800' :
                         course.status === 'PendingReview' ? 'bg-yellow-100 text-yellow-800' :
+                        course.status === 'Rejected' ? 'bg-red-100 text-red-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {course.status}
@@ -185,6 +200,11 @@ export function InstructorDashboard() {
                       <Link to={`/instructor/edit-course/${course.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">
                         Edit
                       </Link>
+                      {course.status === 'Approved' && (
+                        <button onClick={() => handlePublish(course.id)} className="text-green-600 hover:text-green-900 mr-4 font-semibold">
+                          Publish
+                        </button>
+                      )}
                       <button onClick={() => handleDelete(course.id)} className="text-red-600 hover:text-red-900">
                         Delete
                       </button>

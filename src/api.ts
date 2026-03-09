@@ -21,8 +21,9 @@ api.interceptors.request.use((config) => {
 
 export const authApi = {
     login: (data: any) => api.post('/Auth/login', data),
-    register: (data: any) => api.post('/Auth/register', data), // Assuming you have register
+    register: (data: any) => api.post('/Auth/register', data),
     googleLogin: (tokenId: string) => api.post('/Auth/google-login', { tokenId }),
+    getMe: () => api.get('/Auth/me'),
 };
 
 export const streakApi = {
@@ -52,7 +53,10 @@ export const coursesApi = {
 };
 
 export const categoriesApi = {
-    getAll: (pageIndex = 1, pageSize = 100) => api.get(`/Categories?pageIndex=${pageIndex}&pageSize=${pageSize}`)
+    getAll: (pageIndex = 1, pageSize = 100) => api.get(`/Categories?pageIndex=${pageIndex}&pageSize=${pageSize}`),
+    create: (data: any) => api.post('/Categories', data),
+    update: (id: string, data: any) => api.put(`/Categories/${id}`, data),
+    delete: (id: string) => api.delete(`/Categories/${id}`)
 };
 
 export const cartApi = {
@@ -69,6 +73,14 @@ export const studentProfilesApi = {
     getById: (id: string) => api.get(`/student-profiles/${id}`),
     getEnrolledCourses: (id: string) => api.get(`/student-profiles/${id}/courses`),
     getMyEnrolledCourses: () => api.get('/student-profiles/my-courses')
+};
+
+export const instructorProfilesApi = {
+    getAll: (pageIndex = 1, pageSize = 10) => api.get(`/InstructorProfiles?pageIndex=${pageIndex}&pageSize=${pageSize}`),
+    getById: (id: string) => api.get(`/InstructorProfiles/${id}`),
+    getMyProfile: () => api.get('/InstructorProfiles/my-profile'),
+    create: (data: any) => api.post('/InstructorProfiles', data),
+    update: (data: any) => api.put('/InstructorProfiles', data),
 };
 
 export default api;
