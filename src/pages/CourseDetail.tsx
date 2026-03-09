@@ -3,13 +3,12 @@ import { useParams } from 'react-router-dom';
 import { Star, Check, Clock, Users, BookOpen } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { VideoPlayer } from '../components/VideoPlayer';
-import { useCart } from '../contexts/CartContext';
+import { EnrollButton } from '../components/EnrollButton';
 import { useAuth } from '../contexts/AuthContext';
 import { coursesApi } from '../api';
 
 export function CourseDetail() {
   const { id } = useParams();
-  const { addToCart } = useCart();
   const { user } = useAuth();
   const [course, setCourse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -101,15 +100,13 @@ export function CourseDetail() {
                   <span className="text-4xl font-serif font-bold text-white">
                     ${course.price}
                   </span>
-                  <Button variant="secondary" size="lg" onClick={() => addToCart({
+                  <EnrollButton variant="secondary" size="lg" course={{
                     id: course.id,
                     title: course.title,
                     instructor: course.instructor,
                     price: course.price,
                     thumbnail: course.thumbnailUrl
-                  })}>
-                    Enroll Now
-                  </Button>
+                  }} />
                 </>
               )}
             </div>

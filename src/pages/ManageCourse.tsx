@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Plus, Trash2, Save, ArrowLeft, GripVertical } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { coursesApi } from '../api';
+import { coursesApi, categoriesApi } from '../api';
 
 interface Lesson {
   id?: string;
@@ -34,14 +34,31 @@ export function ManageCourse() {
   const [price, setPrice] = useState(0);
   const [difficultyLevel, setDifficultyLevel] = useState(0); // 0 = Beginner, 1 = Intermediate, 2 = Advanced
   const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [categories, setCategories] = useState<any[]>([]);
   
   const [sections, setSections] = useState<Section[]>([]);
 
   useEffect(() => {
+    loadCategories();
     if (isEditMode) {
       loadCourse();
     }
   }, [id]);
+
+  const loadCategories = async () => {
+    try {
+      const res = await categoriesApi.getAll(1, 100);
+      if (res.data?.data?.items) {
+        setCategories(res.data.data.items);
+        if(!categoryId && res.data.data.items.length > 0) {
+            setCategoryId(res.data.data.items[0].id);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load categories", err);
+    }
+  };
 
   const loadCourse = async () => {
     try {
@@ -54,6 +71,7 @@ export function ManageCourse() {
         setPrice(c.price || 0);
         setDifficultyLevel(typeof c.difficultyLevel === 'number' ? c.difficultyLevel : 0);
         setThumbnailUrl(c.thumbnailUrl || '');
+        setCategoryId(c.categoryId || '');
         
         // Map sections
         if (c.sections) {
@@ -129,7 +147,7 @@ export function ManageCourse() {
          price: Number(price),
          difficultyLevel: Number(difficultyLevel),
          thumbnailUrl: thumbnailUrl || null,
-         categoryId: null
+         categoryId: categoryId || null
       };
 
       if (!isEditMode) {
@@ -275,6 +293,18 @@ export function ManageCourse() {
                               <option value={2}>Advanced</option>
                           </select>
                         </div>
+                    </div>
+
+                    <div>
+                          <label className="block text-sm text-[#2d2d2d] font-bold mb-2 uppercase tracking-wide">Category</label>
+                          <select 
+                            className="w-full px-4 py-3 border-2 border-[#e5e5e5] bg-[#faf8f5] focus:bg-white focus:border-[#2d2d2d] focus:outline-none transition-colors rounded-none"
+                            value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                              {categories.map((cat: any) => (
+                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
+                              ))}
+                              {categories.length === 0 && <option value="">Loading categories...</option>}
+                          </select>
                     </div>
 
                     <Input label="Thumbnail URL" placeholder="https://..." value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} />

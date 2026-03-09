@@ -1,12 +1,55 @@
-import React from 'react';
-import { PlayCircle, Clock, Award } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { PlayCircle, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 import { WeeklyStreak } from '../components/WeeklyStreak';
+import { studentProfilesApi } from '../api';
 export function CustomerDashboard() {
   const {
     user
   } = useAuth();
+  const [students, setStudents] = useState<any[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newStudentData, setNewStudentData] = useState({ fullName: '', email: '', password: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+     fetchStudents();
+  }, []);
+
+  const fetchStudents = async () => {
+    try {
+        const res = await studentProfilesApi.getMyStudents();
+        if(res.data?.data) {
+            setStudents(res.data.data);
+        }
+    } catch(err) {
+        console.error("Error fetching students:", err);
+    }
+  };
+
+  const handleCreateStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+       await studentProfilesApi.register({
+           FullName: newStudentData.fullName,
+           Email: newStudentData.email,
+           Password: newStudentData.password,
+           Phone: ""
+       });
+       alert("Child account created successfully!");
+       setIsModalOpen(false);
+       setNewStudentData({ fullName: '', email: '', password: '' });
+       fetchStudents();
+    } catch(err: any) {
+       alert(err.response?.data?.message || "Error creating account");
+    } finally {
+       setIsSubmitting(false);
+    }
+  };
+
   const myCourses = [{
     id: '1',
     title: 'Watercolor Wonderland',
@@ -64,35 +107,36 @@ export function CustomerDashboard() {
           <h2 className="text-2xl font-serif font-bold text-[#2d2d2d]">
             Manage Kids & Assignments
           </h2>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setIsModalOpen(true)}>
             + Add New Kid Account
           </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Mock Kid Profile */}
-          <div className="bg-white p-6 rounded-xl border-2 border-dashed border-[#ff8a80]/30 flex items-center gap-4">
-            <img
-              src="https://api.dicebear.com/7.x/avataaars/svg?seed=micah"
-              alt="Kid Avatar"
-              className="w-16 h-16 rounded-full bg-yellow-50"
-            />
-            <div>
-              <h3 className="font-bold text-lg text-[#2d2d2d]">Micah (Student)</h3>
-              <p className="text-sm text-gray-500 mb-2">2 Courses Assigned</p>
-              <div className="flex gap-2">
-                <span className="text-xs bg-[#E0F2F1] text-[#00695C] px-2 py-1 rounded-full font-bold">
-                  Active
-                </span>
-                <button className="text-xs text-[#5D5FEF] font-bold hover:underline">
-                  Assign Course
-                </button>
-              </div>
-            </div>
-          </div>
+          {students.map((student: any) => (
+             <div key={student.id} className="bg-white p-6 rounded-xl border-2 border-dashed border-[#ff8a80]/30 flex items-center gap-4">
+                <img
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.studentFullName}`}
+                  alt="Kid Avatar"
+                  className="w-16 h-16 rounded-full bg-yellow-50"
+               />
+               <div>
+                 <h3 className="font-bold text-lg text-[#2d2d2d]">{student.studentFullName}</h3>
+                 <p className="text-sm text-gray-500 mb-2">{student.enrollmentCount} Courses</p>
+                 <div className="flex gap-2">
+                   <span className="text-xs bg-[#E0F2F1] text-[#00695C] px-2 py-1 rounded-full font-bold">
+                     Active
+                   </span>
+                   <button className="text-xs text-[#5D5FEF] font-bold hover:underline">
+                     Assign Course
+                   </button>
+                 </div>
+               </div>
+             </div>
+          ))}
 
-          {/* Mock Kid Profile 2 */}
-          <div className="bg-white p-6 rounded-xl border border-[#2d2d2d]/10 flex items-center gap-4 opacity-60">
+          {/* Add Child Trigger Card */}
+          <div onClick={() => setIsModalOpen(true)} className="bg-white p-6 rounded-xl border border-[#2d2d2d]/10 flex items-center gap-4 opacity-60 cursor-pointer hover:opacity-100 transition-opacity">
             <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
               <span className="text-2xl">+</span>
             </div>
@@ -103,6 +147,27 @@ export function CustomerDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Add Kid Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+           <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full relative">
+              <button 
+                  onClick={() => setIsModalOpen(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                  <X size={20} />
+              </button>
+              <h3 className="text-2xl font-serif font-bold text-[#2d2d2d] mb-6">Add New Child Account</h3>
+              <form onSubmit={handleCreateStudent} className="space-y-4">
+                 <Input label="Child's Full Name" placeholder="e.g. Timmy" value={newStudentData.fullName} onChange={e => setNewStudentData({...newStudentData, fullName: e.target.value})} required />
+                 <Input label="Login Email" type="email" placeholder="timmy@example.com" value={newStudentData.email} onChange={e => setNewStudentData({...newStudentData, email: e.target.value})} required />
+                 <Input label="Password" type="password" placeholder="••••••••" value={newStudentData.password} onChange={e => setNewStudentData({...newStudentData, password: e.target.value})} required />
+                 <p className="text-xs text-gray-500 pb-2">Your child will use this email and password to log in to their student dashboard.</p>
+                 <Button type="submit" className="w-full" isLoading={isSubmitting}>Create Account</Button>
+              </form>
+           </div>
+        </div>
+      )}
 
       <h2 className="text-2xl font-serif font-bold text-[#2d2d2d] mb-6">
         Continue Learning

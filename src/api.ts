@@ -51,4 +51,22 @@ export const coursesApi = {
     publish: (id: string) => api.post(`/Courses/${id}/publish`),
 };
 
+export const categoriesApi = {
+    getAll: (pageIndex = 1, pageSize = 100) => api.get(`/Categories?pageIndex=${pageIndex}&pageSize=${pageSize}`)
+};
+
+export const cartApi = {
+    getCart: () => api.get('/cart'),
+    addItem: (data: any) => api.post('/cart/items', data),
+    removeItem: (itemId: string) => api.delete(`/cart/items/${itemId}`),
+    clearCart: () => api.delete('/cart'),
+    checkout: (data: any) => api.post('/cart/checkout', data)
+};
+
+export const studentProfilesApi = {
+    register: (data: any) => api.post('/student-profiles', data),
+    getMyStudents: () => api.get('/student-profiles'),
+    getById: (id: string) => api.get(`/student-profiles/${id}`)
+};
+
 export default api;
