@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Users, DollarSign, BookOpen, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { coursesApi } from '../api';
+import { coursesApi, instructorProfilesApi } from '../api';
 
 export function InstructorDashboard() {
   const [courses, setCourses] = useState<any[]>([]);
@@ -17,22 +17,31 @@ export function InstructorDashboard() {
   const fetchMyCourses = async () => {
     try {
       setIsLoading(true);
-      const res = await coursesApi.getMyCourses(1, 50);
-      if (res.data?.data) {
-        const fetchedCourses = res.data.data.items || [];
+      // Fetch Profile and Courses in parallel
+      const [profileRes, coursesRes] = await Promise.all([
+        instructorProfilesApi.getMyProfile().catch(() => null),
+        coursesApi.getMyCourses(1, 50)
+      ]);
+
+      let earnings = 0;
+      if (profileRes?.data?.data) {
+        earnings = profileRes.data.data.totalEarnings || 0;
+      }
+
+      if (coursesRes.data?.data) {
+        const fetchedCourses = coursesRes.data.data.items || [];
         setCourses(fetchedCourses);
 
-        // Dummy calculations since we might not have all these stats in course list
         const activeCount = fetchedCourses.filter((c: any) => c.status === 'Published').length;
         setStats({
-          totalRevenue: 1240, // Mock
-          totalStudents: 156, // Mock 
+          totalRevenue: earnings,
+          totalStudents: 0, // Backend doesn't provide student count yet
           activeCourses: activeCount,
-          avgRating: 4.8 // Mock
+          avgRating: 0.0 // Backend doesn't provide rating yet
         });
       }
     } catch (error) {
-      console.error("Error fetching instructor courses:", error);
+      console.error("Error fetching instructor data:", error);
     } finally {
       setIsLoading(false);
     }
@@ -50,6 +59,19 @@ export function InstructorDashboard() {
       } catch (error) {
         console.error("Error deleting course", error);
         alert("Failed to delete course.");
+      }
+    }
+  };
+
+  const handlePublish = async (id: string) => {
+    if (confirm('Are you sure you want to publish this course to the public catalog?')) {
+      try {
+        await coursesApi.publish(id);
+        alert('Course published successfully!');
+        fetchMyCourses();
+      } catch (error: any) {
+        console.error('Failed to publish course', error);
+        alert(error.response?.data?.message || 'Failed to publish course.');
       }
     }
   };
@@ -179,6 +201,11 @@ export function InstructorDashboard() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {course.status === 'Approved' && (
+                        <button onClick={() => handlePublish(course.id)} className="text-green-600 hover:text-green-900 font-bold mr-4">
+                          Publish
+                        </button>
+                      )}
                       <Link to={`/course/${course.id}`} className="text-[#2d2d2d] hover:text-[#ff8a80] mr-4">
                         View
                       </Link>

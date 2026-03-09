@@ -3,14 +3,14 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Plus, Trash2, Save, ArrowLeft, GripVertical } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { coursesApi } from '../api';
+import { coursesApi, uploadsApi } from '../api';
 
 interface Lesson {
   id?: string;
   title: string;
   description: string;
   videoUrl: string;
-  durationSeconds: number;
+  durationMinute: number;
   isTrial: boolean;
 }
 
@@ -36,6 +36,41 @@ export function ManageCourse() {
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   
   const [sections, setSections] = useState<Section[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileUpload = async (file: File, folder: string): Promise<string | null> => {
+    try {
+      setIsUploading(true);
+      const res = await uploadsApi.getPresignedUrl({
+          fileName: file.name,
+          contentType: file.type || 'application/octet-stream',
+          folder: folder
+      });
+      const { uploadUrl, objectKey } = res.data.data;
+      
+      // Upload to S3 using the Presigned URL
+      await fetch(uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: {
+              'Content-Type': file.type || 'application/octet-stream'
+          }
+      });
+      
+      // Construct the final public URL. 
+      // Replace with your actual CloudFront or S3 bucket public endpoint if stored locally.
+      // E.g. https://drawing-bucket-images.s3.ap-southeast-1.amazonaws.com/${objectKey}
+      const s3Url = uploadUrl.split('?')[0]; 
+      
+      return s3Url;
+    } catch (err) {
+      console.error("Upload failed", err);
+      alert("Failed to upload file. Check S3 credentials.");
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   useEffect(() => {
     if (isEditMode) {
@@ -62,11 +97,10 @@ export function ManageCourse() {
              title: s.title,
              description: s.description || '',
              lessons: s.lessons ? s.lessons.map((l: any) => ({
-                 id: l.id,
                  title: l.title,
                  description: l.description || '',
                  videoUrl: l.videoUrl || '',
-                 durationSeconds: l.durationSeconds || 0,
+                 durationMinute: l.durationMinute || l.durationSeconds || 0, // Fallback for backwards compatibility if needed
                  isTrial: l.isTrial || false
              })) : []
           })));
@@ -102,7 +136,7 @@ export function ManageCourse() {
       title: 'New Lesson',
       description: '',
       videoUrl: '',
-      durationSeconds: 300,
+      durationMinute: 10,
       isTrial: false
     });
     setSections(newSections);
@@ -143,7 +177,7 @@ export function ManageCourse() {
                    title: l.title,
                    description: l.description,
                    videoUrl: l.videoUrl,
-                   durationSeconds: Number(l.durationSeconds),
+                   durationMinute: Number(l.durationMinute),
                    isTrial: l.isTrial
                }))
             }))
@@ -178,7 +212,7 @@ export function ManageCourse() {
                 title: l.title,
                 description: l.description,
                 videoUrl: l.videoUrl,
-                durationSeconds: Number(l.durationSeconds),
+                durationMinute: Number(l.durationMinute),
                 isTrial: l.isTrial
             }))
          }))
@@ -228,7 +262,7 @@ export function ManageCourse() {
                 </Button>
              )}
              {!isEditMode && (
-                 <Button onClick={handleSaveBasic} isLoading={isSaving}>
+                 <Button onClick={handleSaveBasic} isLoading={isSaving || isUploading} disabled={isUploading}>
                    <Save className="w-4 h-4 mr-2" /> Save & Create
                  </Button>
              )}
@@ -243,7 +277,7 @@ export function ManageCourse() {
                  <h2 className="text-xl font-bold font-serif mb-4 flex items-center justify-between">
                     Basic Settings
                     {isEditMode && (
-                        <Button variant="outline" size="sm" onClick={handleSaveBasic} isLoading={isSaving}>Save Info</Button>
+                        <Button variant="outline" size="sm" onClick={handleSaveBasic} isLoading={isSaving || isUploading} disabled={isUploading}>Save Info</Button>
                     )}
                  </h2>
 
@@ -277,7 +311,23 @@ export function ManageCourse() {
                         </div>
                     </div>
 
-                    <Input label="Thumbnail URL" placeholder="https://..." value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} />
+                    <div>
+                      <label className="block text-sm text-[#2d2d2d] font-bold mb-2 uppercase tracking-wide">
+                          Course Thumbnail {isUploading && <span className="text-xs text-indigo-500 font-normal ml-2">(Uploading...)</span>}
+                      </label>
+                      <input 
+                         type="file" 
+                         accept="image/*"
+                         className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                         onChange={async (e) => {
+                             if(e.target.files && e.target.files[0]) {
+                                 const url = await handleFileUpload(e.target.files[0], 'thumbnails');
+                                 if(url) setThumbnailUrl(url);
+                             }
+                         }}
+                         disabled={isUploading}
+                      />
+                    </div>
                     
                     {thumbnailUrl && (
                         <div className="mt-4 border-2 border-dashed border-gray-300 p-2 rounded-xl flex items-center justify-center bg-gray-50 h-32 overflow-hidden">
@@ -300,7 +350,7 @@ export function ManageCourse() {
                             <Plus className="w-4 h-4 mr-1" /> Add Section
                         </Button>
                         {isEditMode && (
-                             <Button size="sm" onClick={handleSaveSections} isLoading={isSaving}>
+                             <Button size="sm" onClick={handleSaveSections} isLoading={isSaving || isUploading} disabled={isUploading}>
                              Save Curriculum
                           </Button>
                         )}
@@ -351,18 +401,27 @@ export function ManageCourse() {
                                             </div>
                                             
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                               <input 
-                                                    className="border border-gray-200 rounded px-2 py-1.5 text-xs w-full focus:outline-indigo-500"
-                                                    value={lesson.videoUrl}
-                                                    onChange={(e) => handleUpdateLesson(sIndex, lIndex, 'videoUrl', e.target.value)}
-                                                    placeholder="Video URL"
-                                                />
+                                                <div>
+                                                   <input 
+                                                      type="file"
+                                                      accept="video/*"
+                                                      className="w-full text-xs text-gray-500 file:border-0 file:bg-gray-100 file:rounded file:px-2 file:py-1 file:text-gray-700 hover:file:bg-gray-200"
+                                                      onChange={async (e) => {
+                                                         if (e.target.files && e.target.files[0]) {
+                                                             const url = await handleFileUpload(e.target.files[0], 'lessons');
+                                                             if (url) handleUpdateLesson(sIndex, lIndex, 'videoUrl', url);
+                                                         }
+                                                      }}
+                                                      disabled={isUploading}
+                                                   />
+                                                   {lesson.videoUrl && <p className="text-[10px] text-green-600 truncate mt-1" title={lesson.videoUrl}>✓ Video ready</p>}
+                                                </div>
                                                 <input 
                                                     className="border border-gray-200 rounded px-2 py-1.5 text-xs w-full focus:outline-indigo-500"
                                                     type="number"
-                                                    value={lesson.durationSeconds}
-                                                    onChange={(e) => handleUpdateLesson(sIndex, lIndex, 'durationSeconds', Number(e.target.value))}
-                                                    placeholder="Duration (seconds)"
+                                                    value={lesson.durationMinute}
+                                                    onChange={(e) => handleUpdateLesson(sIndex, lIndex, 'durationMinute', Number(e.target.value))}
+                                                    placeholder="Duration (minutes)"
                                                 />
                                                 <label className="flex items-center gap-2 text-xs text-gray-600 font-medium cursor-pointer">
                                                     <input 

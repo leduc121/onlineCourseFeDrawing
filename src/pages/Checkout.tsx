@@ -1,27 +1,63 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, CreditCard, Lock } from 'lucide-react';
+import { Trash2, Lock, AlertCircle } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
+import { cartApi, studentProfilesApi } from '../api';
+
 export function Checkout() {
-  const {
-    items,
-    removeFromCart,
-    total,
-    clearCart
-  } = useCart();
+  const { items, removeFromCart, total, clearCart } = useCart();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
-  const handlePayment = (e: React.FormEvent) => {
-    e.preventDefault();
+  const [children, setChildren] = useState<any[]>([]);
+  const [selectedChildId, setSelectedChildId] = useState<string>('');
+
+  useEffect(() => {
+    studentProfilesApi.getMyStudents()
+      .then(res => {
+        if (res.data?.data) {
+          setChildren(res.data.data);
+          if (res.data.data.length > 0) setSelectedChildId(res.data.data[0].id);
+        }
+      })
+      .catch(err => console.error("Failed to load students", err));
+  }, []);
+
+  const handleStripeCheckout = async () => {
+    if (!selectedChildId) {
+      alert("Please select a child profile first.");
+      return;
+    }
+    
     setIsProcessing(true);
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false);
-      clearCart();
-      navigate('/dashboard');
-    }, 2000);
+    try {
+      await cartApi.clearCart().catch(() => {});
+      
+      for (const item of items) {
+         await cartApi.addItem({
+             CourseId: item.id,
+             ItemType: 0, 
+             StudentProfileId: selectedChildId
+         });
+      }
+
+      const res = await cartApi.checkout({
+          SuccessUrl: window.location.origin + '/dashboard',
+          CancelUrl: window.location.origin + '/checkout'
+      });
+
+      if (res.data?.data?.sessionUrl) {
+          clearCart(); 
+          window.location.href = res.data.data.sessionUrl; 
+      } else {
+          alert("Failed to initialize payment session.");
+      }
+    } catch (error: any) {
+       console.error("Checkout Error:", error);
+       alert(error.response?.data?.message || "Checkout failed.");
+    } finally {
+       setIsProcessing(false);
+    }
   };
   if (items.length === 0) {
     return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">
@@ -71,31 +107,48 @@ export function Checkout() {
             </div>
           </div>
 
-          {/* Payment Form */}
+          {/* Checkout Details & Actions */}
           <div>
             <h2 className="text-2xl font-serif font-bold text-[#2d2d2d] mb-6">
-              Payment Details
+              Payment & Assignment
             </h2>
-            <form onSubmit={handlePayment} className="bg-white p-8 border border-[#2d2d2d]/10 shadow-lg space-y-6">
-              <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4">
-                <Lock className="w-4 h-4" />
-                <span>Payments are secure and encrypted</span>
+            <div className="bg-white p-8 border border-[#2d2d2d]/10 shadow-lg space-y-6">
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">Assign these courses to:</label>
+                {children.length > 0 ? (
+                  <select 
+                    className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-[#ff8a80] focus:ring focus:ring-[#ff8a80]/20 transition-colors"
+                    value={selectedChildId}
+                    onChange={(e) => setSelectedChildId(e.target.value)}
+                  >
+                    {children.map(kid => (
+                      <option key={kid.id} value={kid.id}>{kid.studentFullName || "Student"}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="text-red-500 text-sm flex items-center gap-2">
+                     <AlertCircle size={16} /> You need to add a Child Profile in your Dashboard first.
+                  </div>
+                )}
               </div>
 
-              <Input label="Cardholder Name" placeholder="John Doe" required />
-              <Input label="Card Number" placeholder="0000 0000 0000 0000" required />
-
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Expiry Date" placeholder="MM/YY" required />
-                <Input label="CVC" placeholder="123" required />
+              <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4 pt-4 border-t border-gray-100">
+                <Lock className="w-4 h-4" />
+                <span>Secure payment powered by Stripe</span>
               </div>
 
               <div className="pt-4">
-                <Button type="submit" className="w-full" size="lg" isLoading={isProcessing}>
-                  Pay ${total}
+                <Button 
+                   onClick={handleStripeCheckout} 
+                   className="w-full" 
+                   size="lg" 
+                   isLoading={isProcessing}
+                   disabled={children.length === 0}
+                >
+                  Pay ${total} with Stripe
                 </Button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>
