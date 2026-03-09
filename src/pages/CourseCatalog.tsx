@@ -1,22 +1,31 @@
 import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { CourseCard, CourseProps } from '../components/CourseCard';
-import { coursesApi } from '../api';
+import { coursesApi, categoriesApi } from '../api';
 
 export function CourseCatalog() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAge, setSelectedAge] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [courses, setCourses] = useState<CourseProps[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         setIsLoading(true);
-        const res = await coursesApi.getPublished(1, 100);
-        if (res.data?.data?.items) {
-          const mappedCourses: CourseProps[] = res.data.data.items.map((c: any) => ({
+        const [coursesRes, categoriesRes] = await Promise.all([
+          coursesApi.getPublished(1, 100),
+          categoriesApi.getAll(1, 100)
+        ]);
+
+        if (categoriesRes.data?.data?.items) {
+          setCategories(categoriesRes.data.data.items);
+        }
+
+        if (coursesRes.data?.data?.items) {
+          const mappedCourses: CourseProps[] = coursesRes.data.data.items.map((c: any) => ({
             id: c.id,
             title: c.title,
             instructor: c.instructorName || 'Unknown Instructor',
@@ -26,12 +35,13 @@ export function CourseCatalog() {
             duration: c.totalDurationMinutes ? `${Math.round(c.totalDurationMinutes / 60)} hrs` : 'N/A',
             image: c.thumbnailUrl || 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
             ageGroup: 'Kids', // Example mapping
+            categoryId: c.categoryId || 'all',
             category: c.categoryName || 'General'
           }));
           setCourses(mappedCourses);
         }
       } catch (error) {
-        console.error("Error fetching courses:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -40,11 +50,11 @@ export function CourseCatalog() {
     fetchCourses();
   }, []);
 
-  const filteredCourses = courses.filter(course => {
+  const filteredCourses = courses.filter((course: any) => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) || course.instructor.toLowerCase().includes(searchTerm.toLowerCase());
     // Simplify age filtering for now since backend may not have ageGroup
     const matchesAge = selectedAge === 'all' || course.ageGroup.includes(selectedAge);
-    const matchesCategory = selectedCategory === 'all' || course.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || course.categoryId === selectedCategory;
     return matchesSearch && matchesAge && matchesCategory;
   });
 
@@ -83,11 +93,9 @@ export function CourseCatalog() {
             <div>
               <select className="w-full px-4 py-3 border-2 border-[#e5e5e5] focus:border-[#2d2d2d] focus:outline-none bg-white" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
                 <option value="all">All Categories</option>
-                <option value="Watercolor">Watercolor</option>
-                <option value="Drawing">Drawing</option>
-                <option value="Digital Art">Digital Art</option>
-                <option value="Acrylic">Acrylic</option>
-                <option value="Sculpture">Sculpture</option>
+                {categories.map(cat => (
+                   <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
               </select>
             </div>
           </div>

@@ -51,10 +51,17 @@ export const coursesApi = {
     publish: (id: string) => api.post(`/Courses/${id}/publish`),
 };
 
+export const categoriesApi = {
+    getAll: (pageIndex = 1, pageSize = 100) => api.get(`/Categories?pageIndex=${pageIndex}&pageSize=${pageSize}`)
+};
+
 export const studentProfilesApi = {
     getMyStudents: () => api.get(`/student-profiles`),
     registerStudent: (data: any) => api.post('/student-profiles', data),
     getById: (id: string) => api.get(`/student-profiles/${id}`),
+    register: (data: any) => api.post('/student-profiles', data),
+    getEnrolledCourses: (id: string) => api.get(`/student-profiles/${id}/courses`),
+    getMyEnrolledCourses: () => api.get('/student-profiles/my-courses')
 };
 
 export const instructorProfilesApi = {

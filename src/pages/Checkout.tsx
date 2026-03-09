@@ -93,7 +93,7 @@ export function Checkout() {
                   </div>
                   <div className="text-right ml-4">
                     <p className="font-bold text-[#2d2d2d]">${item.price}</p>
-                    <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-700 text-sm mt-1 flex items-center">
+                    <button onClick={() => removeFromCart(item.cartItemId || item.id)} className="text-red-500 hover:text-red-700 text-sm mt-1 flex items-center">
                       <Trash2 className="w-3 h-3 mr-1" /> Remove
                     </button>
                   </div>
