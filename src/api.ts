@@ -66,7 +66,9 @@ export const cartApi = {
 export const studentProfilesApi = {
     register: (data: any) => api.post('/student-profiles', data),
     getMyStudents: () => api.get('/student-profiles'),
-    getById: (id: string) => api.get(`/student-profiles/${id}`)
+    getById: (id: string) => api.get(`/student-profiles/${id}`),
+    getEnrolledCourses: (id: string) => api.get(`/student-profiles/${id}/courses`),
+    getMyEnrolledCourses: () => api.get('/student-profiles/my-courses')
 };
 
 export default api;
