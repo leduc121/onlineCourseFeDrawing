@@ -1,48 +1,62 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Star, Check, Clock, Users, BookOpen } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { VideoPlayer } from '../components/VideoPlayer';
-import { useCart } from '../contexts/CartContext';
+import { EnrollButton } from '../components/EnrollButton';
 import { useAuth } from '../contexts/AuthContext';
+import { coursesApi } from '../api';
+
 export function CourseDetail() {
-  const {
-    id
-  } = useParams();
-  const {
-    addToCart
-  } = useCart();
+  const { id } = useParams();
   const { user } = useAuth();
-  // Mock Data (would fetch based on ID)
-  const course = {
-    id: '1',
-    title: 'Watercolor Wonderland: Basics for Kids',
-    instructor: 'Ms. Lan Anh',
-    price: 29,
-    rating: 4.8,
-    reviews: 42,
-    students: 120,
-    duration: '4 weeks',
-    description: 'Join Ms. Lan Anh on a colorful journey through the magical world of watercolors! In this course designed specifically for children ages 5-7, we will learn how to mix colors, create beautiful washes, and paint our favorite animals and flowers. No prior experience needed!',
-    curriculum: [{
-      title: 'Introduction to Materials',
-      duration: '10:00',
-      free: true
-    }, {
-      title: 'Mixing Primary Colors',
-      duration: '15:00',
-      free: false
-    }, {
-      title: 'Painting a Rainbow',
-      duration: '20:00',
-      free: false
-    }, {
-      title: 'My First Flower Garden',
-      duration: '25:00',
-      free: false
-    }],
-    features: ['4 hours of video content', 'Downloadable coloring sheets', 'Certificate of completion', 'Lifetime access']
-  };
+  const [course, setCourse] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCourseDetails = async () => {
+      if (!id) return;
+      try {
+        setIsLoading(true);
+        const res = await coursesApi.getById(id);
+        if (res.data?.data) {
+          const c = res.data.data;
+          setCourse({
+             id: c.id,
+             title: c.title,
+             instructor: c.instructorName || 'Unknown Instructor',
+             price: c.price,
+             rating: 5.0, // Mock or map from response
+             reviews: 0,
+             students: 0,
+             duration: c.totalDurationMinutes ? `${Math.round(c.totalDurationMinutes / 60)} hrs` : 'N/A',
+             description: c.description || 'No description available.',
+             thumbnailUrl: c.thumbnailUrl || 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+             curriculum: c.sections?.map((s: any) => ({
+                 title: s.title,
+                 duration: 'N/A', // Update with actual structure if lesson durations exist
+                 free: false // Update with actual logic
+             })) || [],
+             features: ['High quality video content', 'Downloadable resources', 'Certificate of completion', 'Lifetime access']
+          });
+        }
+      } catch (error) {
+         console.error("Error fetching course detail:", error);
+      } finally {
+         setIsLoading(false);
+      }
+    };
+    fetchCourseDetails();
+  }, [id]);
+
+  if (isLoading) {
+      return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">Loading course...</div>;
+  }
+
+  if (!course) {
+      return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">Course not found.</div>;
+  }
+
   return <div className="min-h-screen bg-[#faf8f5] pb-20">
     {/* Hero Section */}
     <div className="bg-[#2d2d2d] text-[#faf8f5] py-16">
@@ -73,7 +87,7 @@ export function CourseDetail() {
               </div>
               <div className="flex items-center">
                 <BookOpen className="w-5 h-5 mr-2" />
-                {course.curriculum.length} lessons
+                {course.curriculum.length} sections
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -86,15 +100,13 @@ export function CourseDetail() {
                   <span className="text-4xl font-serif font-bold text-white">
                     ${course.price}
                   </span>
-                  <Button variant="secondary" size="lg" onClick={() => addToCart({
+                  <EnrollButton variant="secondary" size="lg" course={{
                     id: course.id,
                     title: course.title,
                     instructor: course.instructor,
                     price: course.price,
-                    thumbnail: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f'
-                  })}>
-                    Enroll Now
-                  </Button>
+                    thumbnail: course.thumbnailUrl
+                  }} />
                 </>
               )}
             </div>
@@ -103,7 +115,7 @@ export function CourseDetail() {
           {/* Video Preview */}
           <div className="lg:pl-8">
             <div className="border-4 border-white/10 shadow-2xl rounded-lg overflow-hidden">
-              <VideoPlayer src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" title="Course Preview" poster="https://images.unsplash.com/photo-1513364776144-60967b0f800f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" />
+              <VideoPlayer src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" title="Course Preview" poster={course.thumbnailUrl} />
             </div>
           </div>
         </div>
@@ -119,7 +131,7 @@ export function CourseDetail() {
               What you'll learn
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {course.features.map((feature, idx) => <div key={idx} className="flex items-start">
+              {course.features.map((feature: string, idx: number) => <div key={idx} className="flex items-start">
                 <Check className="w-5 h-5 text-[#87a878] mr-3 mt-1" />
                 <span className="text-gray-700">{feature}</span>
               </div>)}
@@ -131,7 +143,7 @@ export function CourseDetail() {
               Course Curriculum
             </h2>
             <div className="bg-white border border-[#2d2d2d]/10 divide-y divide-[#2d2d2d]/10">
-              {course.curriculum.map((lesson, idx) => <div key={idx} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
+              {course.curriculum.length > 0 ? course.curriculum.map((lesson: any, idx: number) => <div key={idx} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                 <div className="flex items-center">
                   <div className="w-8 h-8 bg-[#faf8f5] rounded-full flex items-center justify-center mr-4 text-[#2d2d2d] font-bold text-sm border border-[#2d2d2d]/10">
                     {idx + 1}
@@ -150,7 +162,9 @@ export function CourseDetail() {
                 </span> : <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">
                   LOCKED
                 </span>}
-              </div>)}
+              </div>) : (
+                <div className="p-4 text-gray-500">No sections added yet.</div>
+              )}
             </div>
           </section>
         </div>
@@ -168,13 +182,12 @@ export function CourseDetail() {
                   {course.instructor}
                 </p>
                 <p className="text-sm text-gray-500">
-                  Professional Artist & Educator
+                  Professional Instructor
                 </p>
               </div>
             </div>
             <p className="text-gray-600 text-sm mb-4">
-              Ms. Lan Anh has been teaching art to children for over 10 years.
-              She believes every child is an artist waiting to be discovered.
+              Dedicated to teaching high-quality courses.
             </p>
             <Button variant="outline" size="sm" className="w-full">
               View Profile

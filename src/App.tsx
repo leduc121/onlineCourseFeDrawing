@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
@@ -17,6 +16,9 @@ import { StudentDashboard } from './pages/StudentDashboard';
 import { InstructorDashboard } from './pages/InstructorDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AboutUs } from './pages/AboutUs';
+import { ManageCourse } from './pages/ManageCourse';
+import { Profile } from './pages/Profile';
+
 export function App() {
   return <AuthProvider>
     <CartProvider>
@@ -52,17 +54,27 @@ export function App() {
             <Route path="/instructor/dashboard" element={<ProtectedRoute allowedRoles={['instructor']}>
               <InstructorDashboard />
             </ProtectedRoute>} />
+            <Route path="/instructor/create-course" element={<ProtectedRoute allowedRoles={['instructor']}>
+              <ManageCourse />
+            </ProtectedRoute>} />
+            <Route path="/instructor/edit-course/:id" element={<ProtectedRoute allowedRoles={['instructor']}>
+              <ManageCourse />
+            </ProtectedRoute>} />
 
             {/* Protected Admin Routes */}
             <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}>
               <AdminDashboard />
             </ProtectedRoute>} />
 
-            {/* Staff routes would go here similarly */}
             <Route path="/staff/dashboard" element={<ProtectedRoute allowedRoles={['staff']}>
               <div className="p-12 text-center">
                 Staff Dashboard Placeholder
               </div>
+            </ProtectedRoute>} />
+
+            {/* Profile Page - common for all logged in users */}
+            <Route path="/profile" element={<ProtectedRoute allowedRoles={['customer', 'instructor', 'staff', 'admin', 'student']}>
+              <Profile />
             </ProtectedRoute>} />
           </Routes>
         </div>

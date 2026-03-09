@@ -1,27 +1,37 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, CreditCard, Lock } from 'lucide-react';
+import { Trash2, Lock } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { cartApi } from '../api';
 export function Checkout() {
   const {
     items,
     removeFromCart,
-    total,
-    clearCart
+    total
   } = useCart();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
-  const handlePayment = (e: React.FormEvent) => {
+  const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
-    // Simulate payment processing
-    setTimeout(() => {
+    try {
+      const res = await cartApi.checkout({
+        SuccessUrl: `${window.location.origin}/dashboard?payment=success`,
+        CancelUrl: window.location.href, // Stay on checkout page
+      });
+      if (res.data?.data?.sessionUrl) {
+         window.location.href = res.data.data.sessionUrl;
+      } else {
+         alert("Could not generate checkout session.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Checkout failed');
+    } finally {
       setIsProcessing(false);
-      clearCart();
-      navigate('/dashboard');
-    }, 2000);
+    }
   };
   if (items.length === 0) {
     return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">
@@ -57,7 +67,7 @@ export function Checkout() {
                   </div>
                   <div className="text-right ml-4">
                     <p className="font-bold text-[#2d2d2d]">${item.price}</p>
-                    <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-700 text-sm mt-1 flex items-center">
+                    <button onClick={() => removeFromCart(item.cartItemId || item.id)} className="text-red-500 hover:text-red-700 text-sm mt-1 flex items-center">
                       <Trash2 className="w-3 h-3 mr-1" /> Remove
                     </button>
                   </div>

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth, UserRole } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Select } from '../components/ui/Select';
+
 export function Login() {
   const {
     login
@@ -11,17 +11,15 @@ export function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('customer');
+
   const [isLoading, setIsLoading] = useState(false);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      login(email, role);
-      setIsLoading(false);
+    try {
+      const loggedInRole = await login(email, password);
       // Redirect based on role
-      switch (role) {
+      switch (loggedInRole) {
         case 'admin':
           navigate('/admin/dashboard');
           break;
@@ -34,7 +32,11 @@ export function Login() {
         default:
           navigate('/dashboard');
       }
-    }, 1000);
+    } catch (error: any) {
+        alert(error.message || 'Login failed');
+    } finally {
+        setIsLoading(false);
+    }
   };
   return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center px-4 py-12">
     <div className="max-w-md w-full space-y-8">
@@ -52,20 +54,6 @@ export function Login() {
           <Input label="Email address" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
 
           <Input label="Password" type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
-
-          <Select label="I am a..." value={role} onChange={e => setRole(e.target.value as UserRole)} options={[{
-            value: 'customer',
-            label: 'Student / Parent'
-          }, {
-            value: 'instructor',
-            label: 'Instructor'
-          }, {
-            value: 'staff',
-            label: 'Staff Member'
-          }, {
-            value: 'admin',
-            label: 'Administrator'
-          }]} />
         </div>
 
         <Button type="submit" className="w-full" isLoading={isLoading}>
@@ -88,7 +76,7 @@ export function Login() {
             // Mock Google Login
             setIsLoading(true);
             setTimeout(() => {
-              login('user@gmail.com', role);
+              login('user@gmail.com');
               setIsLoading(false);
               navigate('/dashboard');
             }, 1000);
