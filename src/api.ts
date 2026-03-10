@@ -59,18 +59,11 @@ export const categoriesApi = {
     delete: (id: string) => api.delete(`/Categories/${id}`)
 };
 
-export const cartApi = {
-    getCart: () => api.get('/cart'),
-    addItem: (data: any) => api.post('/cart/items', data),
-    removeItem: (itemId: string) => api.delete(`/cart/items/${itemId}`),
-    clearCart: () => api.delete('/cart'),
-    checkout: (data: any) => api.post('/cart/checkout', data)
-};
-
 export const studentProfilesApi = {
-    register: (data: any) => api.post('/student-profiles', data),
-    getMyStudents: () => api.get('/student-profiles'),
+    getMyStudents: () => api.get(`/student-profiles`),
+    registerStudent: (data: any) => api.post('/student-profiles', data),
     getById: (id: string) => api.get(`/student-profiles/${id}`),
+    register: (data: any) => api.post('/student-profiles', data),
     getEnrolledCourses: (id: string) => api.get(`/student-profiles/${id}/courses`),
     getMyEnrolledCourses: () => api.get('/student-profiles/my-courses')
 };
@@ -81,6 +74,23 @@ export const instructorProfilesApi = {
     getMyProfile: () => api.get('/InstructorProfiles/my-profile'),
     create: (data: any) => api.post('/InstructorProfiles', data),
     update: (data: any) => api.put('/InstructorProfiles', data),
+};
+
+export const paymentsApi = {
+    getMyTransactions: () => api.get('/payments/my-transactions'),
+    createCheckoutSession: (data: any) => api.post('/payments/create-checkout-session', data),
+};
+
+export const cartApi = {
+    getCart: () => api.get('/cart'),
+    addItem: (data: any) => api.post('/cart/items', data),
+    removeItem: (id: string) => api.delete(`/cart/items/${id}`),
+    clearCart: () => api.delete('/cart'),
+    checkout: (data: any) => api.post('/cart/checkout', data),
+};
+
+export const uploadsApi = {
+    getPresignedUrl: (data: { fileName: string, contentType: string, folder: string }) => api.post('/Uploads/presigned-url', data),
 };
 
 export default api;
