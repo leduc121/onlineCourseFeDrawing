@@ -18,6 +18,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { AboutUs } from './pages/AboutUs';
 import { ManageCourse } from './pages/ManageCourse';
 import { Profile } from './pages/Profile';
+import { CoursePlay } from './pages/CoursePlay';
 
 export function App() {
   return <AuthProvider>
@@ -48,6 +49,9 @@ export function App() {
             {/* Protected Student Routes */}
             <Route path="/student/dashboard" element={<ProtectedRoute allowedRoles={['student']}>
               <StudentDashboard />
+            </ProtectedRoute>} />
+            <Route path="/course/:id/learn" element={<ProtectedRoute allowedRoles={['student']}>
+              <CoursePlay />
             </ProtectedRoute>} />
 
             {/* Protected Instructor Routes */}

@@ -39,6 +39,24 @@ export function CustomerDashboard() {
   };
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const txnRef = params.get('txnRef');
+    if (txnRef) {
+      // Auto-activate for local demo
+      import('axios').then(axios => {
+        axios.default.get(`http://localhost:5215/api/payments/simulate-success/${txnRef}`)
+          .then(() => {
+            // Remove txnRef from URL without reloading
+            const url = new URL(window.location.href);
+            url.searchParams.delete('txnRef');
+            window.history.replaceState({}, '', url.pathname);
+            // Refresh data
+            fetchDashboardData();
+          })
+          .catch(err => console.error("Auto-activation failed", err));
+      });
+    }
+
     fetchDashboardData();
   }, []);
 
@@ -202,7 +220,10 @@ export function CustomerDashboard() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  Date & Time
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Order ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Course
@@ -219,20 +240,25 @@ export function CustomerDashboard() {
               {transactions.length > 0 ? transactions.map(tx => (
                 <tr key={tx.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(tx.createdAt).toLocaleDateString()}
+                    {new Date(tx.createdAt).toLocaleDateString()} <span className="text-xs opacity-50">{new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-xs font-mono text-gray-400">
+                    {tx.txnRef?.substring(0, 8)}...
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#2d2d2d]">
                     {tx.courseTitle || (tx.cartItems && tx.cartItems.length > 0 ? tx.cartItems[0].courseTitle : 'Unknown')}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${tx.amount.toFixed(2)}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-[#2d2d2d]">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(tx.amount)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      tx.status === 'Completed' || tx.status === 1 ? 'bg-green-100 text-green-800' : 
+                      tx.status === 'Success' || tx.status === 1 ? 'bg-green-100 text-green-800' : 
                       tx.status === 'Pending' || tx.status === 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {tx.status === 1 ? 'Completed' : tx.status === 0 ? 'Pending' : 'Failed'}
+                      {tx.status === 'Success' || tx.status === 1 ? 'Completed' : 
+                       tx.status === 'Pending' || tx.status === 0 ? 'Pending' : 
+                       tx.status === 'Failed' || tx.status === 2 ? 'Failed' : tx.status}
                     </span>
                   </td>
                 </tr>

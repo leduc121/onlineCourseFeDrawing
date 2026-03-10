@@ -50,9 +50,7 @@ export function CourseCard({
         </p>
 
         <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-          <span className="text-2xl font-serif font-bold text-[#2d2d2d]">
-            ${course.price}
-          </span>
+            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(course.price)}
           <EnrollButton course={{
               id: course.id,
               title: course.title,

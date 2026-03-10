@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Star, Check, Clock, Users, BookOpen } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { VideoPlayer } from '../components/VideoPlayer';
@@ -9,6 +9,7 @@ import { coursesApi } from '../api';
 
 export function CourseDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [course, setCourse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -92,13 +93,13 @@ export function CourseDetail() {
             </div>
             <div className="flex items-center space-x-4">
               {user?.role === 'student' ? (
-                <Button variant="primary" size="lg" onClick={() => { }}>
+                <Button variant="primary" size="lg" onClick={() => navigate(`/course/${course.id}/learn`)}>
                   Start Learning
                 </Button>
               ) : (
                 <>
                   <span className="text-4xl font-serif font-bold text-white">
-                    ${course.price}
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(course.price)}
                   </span>
                   <EnrollButton variant="secondary" size="lg" course={{
                     id: course.id,

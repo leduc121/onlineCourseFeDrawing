@@ -17,11 +17,18 @@ export function Checkout() {
       .then(res => {
         if (res.data?.data) {
           setChildren(res.data.data);
-          if (res.data.data.length > 0) setSelectedChildId(res.data.data[0].id);
+          
+          // Pre-select based on cart items first, then fallback to first student
+          const firstItemWithProfile = items.find(i => i.studentProfileId);
+          if (firstItemWithProfile?.studentProfileId) {
+            setSelectedChildId(firstItemWithProfile.studentProfileId);
+          } else if (res.data.data.length > 0) {
+            setSelectedChildId(res.data.data[0].id);
+          }
         }
       })
       .catch(err => console.error("Failed to load students", err));
-  }, []);
+  }, [items]);
 
   const handleStripeCheckout = async () => {
     if (!selectedChildId) {
@@ -31,19 +38,18 @@ export function Checkout() {
     
     setIsProcessing(true);
     try {
-      await cartApi.clearCart().catch(() => {});
-      
+      // Sync all cart items to the selected student profile
       for (const item of items) {
-         await cartApi.addItem({
-             CourseId: item.id,
-             ItemType: 0, 
-             StudentProfileId: selectedChildId
-         });
+         if (item.studentProfileId !== selectedChildId && item.cartItemId) {
+            await cartApi.updateItem(item.cartItemId, {
+                studentProfileId: selectedChildId
+            });
+         }
       }
 
       const res = await cartApi.checkout({
-          SuccessUrl: window.location.origin + '/dashboard',
-          CancelUrl: window.location.origin + '/checkout'
+          successUrl: window.location.origin + '/dashboard',
+          cancelUrl: window.location.origin + '/checkout'
       });
 
       if (res.data?.data?.sessionUrl) {
@@ -92,7 +98,7 @@ export function Checkout() {
                     <p className="text-sm text-gray-500">{item.instructor}</p>
                   </div>
                   <div className="text-right ml-4">
-                    <p className="font-bold text-[#2d2d2d]">${item.price}</p>
+                    <p className="font-bold text-[#2d2d2d]">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}</p>
                     <button onClick={() => removeFromCart(item.cartItemId || item.id)} className="text-red-500 hover:text-red-700 text-sm mt-1 flex items-center">
                       <Trash2 className="w-3 h-3 mr-1" /> Remove
                     </button>
@@ -101,7 +107,7 @@ export function Checkout() {
               <div className="p-6 bg-gray-50">
                 <div className="flex justify-between items-center text-xl font-bold text-[#2d2d2d]">
                   <span>Total</span>
-                  <span>${total}</span>
+                  <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(total)}</span>
                 </div>
               </div>
             </div>
@@ -145,7 +151,7 @@ export function Checkout() {
                    isLoading={isProcessing}
                    disabled={children.length === 0}
                 >
-                  Pay ${total} with Stripe
+                  Pay {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(total)} with Stripe
                 </Button>
               </div>
             </div>

@@ -13,9 +13,9 @@ export function MembershipCheckout() {
 
     // Plan Details Map
     const plans: Record<string, { name: string; price: string }> = {
-        'little-artist': { name: 'Little Artist', price: '$9.99/mo' },
-        'creative-studio': { name: 'Creative Studio', price: '$19.99/mo' },
-        'masterpiece-pro': { name: 'Masterpiece Pro', price: '$49.99/mo' }
+        'little-artist': { name: 'Little Artist', price: '250.000 ₫/tháng' },
+        'creative-studio': { name: 'Creative Studio', price: '500.000 ₫/tháng' },
+        'masterpiece-pro': { name: 'Masterpiece Pro', price: '1.250.000 ₫/tháng' }
     };
 
     const selectedPlan = planId ? plans[planId] : null;
@@ -91,7 +91,7 @@ export function MembershipCheckout() {
                             </div>
                             <div className="flex justify-between items-center text-sm text-gray-600 mb-6">
                                 <span>Tax</span>
-                                <span>$0.00</span>
+                                <span>0 ₫</span>
                             </div>
                             <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                                 <span className="font-bold text-[#2d2d2d]">Total due today</span>

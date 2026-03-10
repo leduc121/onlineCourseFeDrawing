@@ -42,6 +42,7 @@ export function CartProvider({
           instructor: item.instructorName || 'Instructor',
           price: item.coursePrice,
           thumbnail: item.thumbnailUrl || 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80',
+          studentProfileId: item.studentProfileId
         }));
         setItems(mapped);
       }
@@ -62,8 +63,9 @@ export function CartProvider({
     if (!items.find(item => item.id === course.id)) {
       try {
         await cartApi.addItem({
-          CourseId: course.id,
-          ItemType: 0 // Buy
+          courseId: course.id,
+          itemType: 0, // Buy
+          studentProfileId: course.studentProfileId
         });
         await fetchCart(); // Refresh cart from server
       } catch (error: any) {

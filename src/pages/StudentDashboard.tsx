@@ -122,7 +122,7 @@ export function StudentDashboard() {
                                 key={course.id}
                                 whileHover={{ y: -8 }}
                                 className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl shadow-indigo-100/50 group cursor-pointer border-4 border-white hover:border-[#5D5FEF] transition-colors"
-                                onClick={() => navigate(`/course/${course.id}`)}
+                                onClick={() => navigate(`/course/${course.id}/learn`)}
                             >
                                 <div className="relative h-56 overflow-hidden">
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />

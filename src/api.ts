@@ -85,12 +85,20 @@ export const cartApi = {
     getCart: () => api.get('/cart'),
     addItem: (data: any) => api.post('/cart/items', data),
     removeItem: (id: string) => api.delete(`/cart/items/${id}`),
+    updateItem: (id: string, data: any) => api.patch(`/cart/items/${id}`, data),
     clearCart: () => api.delete('/cart'),
     checkout: (data: any) => api.post('/cart/checkout', data),
 };
 
 export const uploadsApi = {
     getPresignedUrl: (data: { fileName: string, contentType: string, folder: string }) => api.post('/Uploads/presigned-url', data),
+};
+
+export const progressApi = {
+    startCourse: (courseId: string) => api.post(`/Progress/courses/${courseId}/start`),
+    getCourseProgress: (courseId: string) => api.get(`/Progress/courses/${courseId}`),
+    markLessonComplete: (lessonId: string) => api.post(`/Progress/lessons/${lessonId}/complete`),
+    updateLastAccessedLesson: (courseId: string, lessonId: string) => api.patch(`/Progress/courses/${courseId}/last-accessed-lesson/${lessonId}`)
 };
 
 export default api;
