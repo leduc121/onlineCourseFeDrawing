@@ -63,7 +63,8 @@ export function CartProvider({
       try {
         await cartApi.addItem({
           CourseId: course.id,
-          ItemType: 0 // Buy
+          ItemType: 0, // Buy
+          StudentProfileId: course.studentProfileId
         });
         await fetchCart(); // Refresh cart from server
       } catch (error: any) {
