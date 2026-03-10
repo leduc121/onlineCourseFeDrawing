@@ -5,7 +5,6 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { coursesApi, uploadsApi, categoriesApi } from '../api';
 
-
 interface Lesson {
   id?: string;
   title: string;
@@ -234,7 +233,9 @@ export function ManageCourse() {
                 description: l.description,
                 videoUrl: l.videoUrl,
                 durationMinute: Number(l.durationMinute),
-                isTrial: l.isTrial
+                isTrial: l.isTrial,
+                quiz: null,
+                assignment: null
             }))
          }))
       };
@@ -349,6 +350,7 @@ export function ManageCourse() {
                          disabled={isUploading}
                       />
                     </div>
+
                     <div>
                           <label className="block text-sm text-[#2d2d2d] font-bold mb-2 uppercase tracking-wide">Category</label>
                           <select 
@@ -360,8 +362,6 @@ export function ManageCourse() {
                               {categories.length === 0 && <option value="">Loading categories...</option>}
                           </select>
                     </div>
-
-                    <Input label="Thumbnail URL" placeholder="https://..." value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} />
                     
                     {thumbnailUrl && (
                         <div className="mt-4 border-2 border-dashed border-gray-300 p-2 rounded-xl flex items-center justify-center bg-gray-50 h-32 overflow-hidden">
