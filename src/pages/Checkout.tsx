@@ -74,9 +74,9 @@ export function Checkout() {
     
     setIsProcessing(true);
     try {
-      // Sync all cart items to the selected student profile
+      // Sync all cart items to the selected student profile (Buy items only)
       for (const item of items) {
-         if (item.studentProfileId !== selectedChildId && item.cartItemId) {
+         if (item.itemType === 0 && item.studentProfileId !== selectedChildId && item.cartItemId) {
             await cartApi.updateItem(item.cartItemId, {
                 studentProfileId: selectedChildId
             });
