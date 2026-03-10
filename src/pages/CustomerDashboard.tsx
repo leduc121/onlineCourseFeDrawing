@@ -17,6 +17,8 @@ export function CustomerDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newKid, setNewKid] = useState({ name: '', email: '', password: '' });
   const [selectedKidDetails, setSelectedKidDetails] = useState<any | null>(null);
+  const [selectedKidCourses, setSelectedKidCourses] = useState<any[]>([]);
+  const [isLoadingKidCourses, setIsLoadingKidCourses] = useState(false);
 
   const fetchDashboardData = async () => {
     try {
@@ -77,6 +79,22 @@ export function CustomerDashboard() {
       alert(error.response?.data?.message || 'Failed to create child account');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleKidClick = async (kid: any) => {
+    setSelectedKidDetails(kid);
+    setIsLoadingKidCourses(true);
+    setSelectedKidCourses([]);
+    try {
+      const res = await studentProfilesApi.getEnrolledCourses(kid.id);
+      if (res.data?.data) {
+        setSelectedKidCourses(res.data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch kid courses", err);
+    } finally {
+      setIsLoadingKidCourses(false);
     }
   };
 
@@ -147,7 +165,7 @@ export function CustomerDashboard() {
               <div 
                 key={kid.id} 
                 className="bg-white p-6 rounded-xl border-2 border-[#2d2d2d]/10 flex items-center gap-4 cursor-pointer hover:border-[#ff8a80] transition-colors"
-                onClick={() => setSelectedKidDetails(kid)}
+                onClick={() => handleKidClick(kid)}
               >
                 <img
                   src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${kid.id}`}
@@ -320,40 +338,78 @@ export function CustomerDashboard() {
         {/* Kid Details Modal */}
         {selectedKidDetails && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full relative">
+            <div className="bg-white rounded-2xl p-8 max-w-lg w-full relative max-h-[90vh] overflow-hidden flex flex-col">
               <button 
                 onClick={() => setSelectedKidDetails(null)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-[#2d2d2d]"
               >
                 <X className="w-6 h-6" />
               </button>
-              <div className="flex flex-col items-center mb-6">
+              
+              <div className="flex flex-col items-center mb-6 shrink-0">
                 <img
                     src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedKidDetails.id}`}
                     alt="Kid Avatar"
-                    className="w-24 h-24 rounded-full bg-yellow-50 mb-4"
+                    className="w-20 h-20 rounded-full bg-yellow-50 mb-3 border-2 border-[#ff8a80]"
                 />
                 <h2 className="text-2xl font-serif font-bold text-[#2d2d2d]">{selectedKidDetails.studentFullName}</h2>
                 <p className="text-gray-500 text-sm">{selectedKidDetails.studentEmail}</p>
               </div>
               
-              <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500 mb-1">Joined Date</p>
-                  <p className="font-medium text-[#2d2d2d]">{new Date(selectedKidDetails.createdAt).toLocaleDateString()}</p>
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-400 mb-0.5">Joined Date</p>
+                    <p className="font-bold text-[#2d2d2d]">{new Date(selectedKidDetails.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-400 mb-0.5">Enrolled</p>
+                    <p className="font-bold text-[#2d2d2d]">{selectedKidDetails.enrollmentCount || 0} Course(s)</p>
+                  </div>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-500 mb-1">Enrolled Courses</p>
-                  <p className="font-medium text-[#2d2d2d]">{selectedKidDetails.enrollmentCount || 0}</p>
+
+                <div>
+                  <h4 className="font-bold text-[#2d2d2d] mb-3 flex items-center gap-2">
+                    Learning Progress
+                  </h4>
+                  {isLoadingKidCourses ? (
+                    <div className="text-center py-8 text-gray-400 text-sm italic">Loading courses...</div>
+                  ) : selectedKidCourses.length > 0 ? (
+                    <div className="space-y-3">
+                      {selectedKidCourses.map(course => (
+                        <div key={course.id} className="bg-white border border-gray-100 p-3 rounded-lg flex items-center gap-3">
+                          <img src={course.thumbnailUrl || 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80'} className="w-12 h-10 object-cover rounded" />
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-[#2d2d2d] line-clamp-1">{course.title}</p>
+                            <div className="w-full bg-gray-100 h-1.5 rounded-full mt-1">
+                              <div className="bg-[#87a878] h-full rounded-full" style={{ width: `${course.progress || 0}%` }} />
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-black text-gray-400 shrink-0">{course.progress || 0}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                      <p className="text-sm text-gray-400">No courses assigned to {selectedKidDetails.studentFullName.split(' ')[0]} yet.</p>
+                      <button 
+                        onClick={() => navigate('/courses')} 
+                        className="text-xs text-[#ff8a80] font-bold mt-2 hover:underline"
+                      >
+                        Explore Catalog
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="pt-4 text-center">
-                  <Button 
-                     onClick={() => navigate('/courses')} 
-                     className="w-full"
-                  >
-                    Browse Courses for {selectedKidDetails.studentFullName}
-                  </Button>
-                </div>
+              </div>
+
+              <div className="pt-6 shrink-0 mt-4 border-t border-gray-100">
+                <Button 
+                   onClick={() => navigate('/courses')} 
+                   className="w-full"
+                >
+                  Find More Courses for {selectedKidDetails.studentFullName.split(' ')[0]}
+                </Button>
               </div>
             </div>
           </div>

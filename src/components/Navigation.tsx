@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { ShoppingBag, User, LogOut, Menu, X } from 'lucide-react';
 import { Button } from './ui/Button';
+import { NotificationPopover } from './NotificationPopover';
 
 export function Navigation() {
   const { user, logout } = useAuth();
@@ -79,6 +80,7 @@ export function Navigation() {
               {/* Auth Section */}
               {user ? (
                 <div className="flex items-center space-x-4">
+                  <NotificationPopover />
                   <Link to={getDashboardLink()} className="flex items-center space-x-2 text-[#2d2d2d] hover:text-[#ff8a80]">
                     <User className="w-5 h-5" />
                     <span className="font-medium">Dashboard</span>

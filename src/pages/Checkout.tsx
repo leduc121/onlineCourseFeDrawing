@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Trash2, Lock, AlertCircle } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { Button } from '../components/ui/Button';
-import { cartApi, studentProfilesApi } from '../api';
+import { cartApi, studentProfilesApi, default as api } from '../api';
 
 export function Checkout() {
   const { items, removeFromCart, total, clearCart } = useCart();
@@ -11,6 +11,9 @@ export function Checkout() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [children, setChildren] = useState<any[]>([]);
   const [selectedChildId, setSelectedChildId] = useState<string>('');
+  const [couponCode, setCouponCode] = useState('');
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [couponMessage, setCouponMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     studentProfilesApi.getMyStudents()
@@ -29,6 +32,39 @@ export function Checkout() {
       })
       .catch(err => console.error("Failed to load students", err));
   }, [items]);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setIsApplyingCoupon(true);
+    setCouponMessage(null);
+    try {
+      // Find a course to validate against (or just validate globally)
+      const firstCourseId = items[0]?.id;
+      if (!firstCourseId) return;
+
+      const res = await api.post('/coupons/validate', { code: couponCode, courseId: firstCourseId });
+      const discount = res.data?.data;
+
+      if (discount) {
+        // Apply to all items in cart (backend logic will handle eligibility)
+        for (const item of items) {
+          if (item.cartItemId) {
+            await cartApi.updateItem(item.cartItemId, { couponCode: couponCode });
+          }
+        }
+        // Force refresh cart to see new prices
+        window.location.reload(); // Simplest way to refresh all contexts
+        setCouponMessage({ text: 'Coupon applied successfully!', type: 'success' });
+      }
+    } catch (err: any) {
+      setCouponMessage({ 
+        text: err.response?.data?.message || 'Invalid or expired coupon code.', 
+        type: 'error' 
+      });
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
 
   const handleStripeCheckout = async () => {
     if (!selectedChildId) {
@@ -107,9 +143,31 @@ export function Checkout() {
               <div className="p-6 bg-gray-50">
                 <div className="flex justify-between items-center text-xl font-bold text-[#2d2d2d]">
                   <span>Total</span>
-                  <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(total)}</span>
+                  <div className="text-right">
+                    <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(total)}</span>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            {/* Coupon Section */}
+            <div className="mt-6 bg-white p-6 border border-[#2d2d2d]/10 shadow-sm">
+              <h3 className="font-bold text-[#2d2d2d] mb-4">Promotional Code</h3>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Enter code..." 
+                  className="flex-1 px-4 py-2 border-2 border-gray-100 rounded-lg focus:border-[#ff8a80] outline-none uppercase text-sm font-bold"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                />
+                <Button onClick={handleApplyCoupon} isLoading={isApplyingCoupon} disabled={!couponCode}>Apply</Button>
+              </div>
+              {couponMessage && (
+                <p className={`mt-2 text-sm font-bold ${couponMessage.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+                  {couponMessage.text}
+                </p>
+              )}
             </div>
           </div>
 

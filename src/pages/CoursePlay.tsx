@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { coursesApi, progressApi } from '../api';
-import { CheckCircle, PlayCircle, ArrowLeft } from 'lucide-react';
+import { CheckCircle, PlayCircle, ArrowLeft, HelpCircle, FileText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { QuizPlayer } from '../components/QuizPlayer';
+import { AssignmentPlayer } from '../components/AssignmentPlayer';
 
 export function CoursePlay() {
     const { id } = useParams<{ id: string }>();
@@ -12,6 +14,8 @@ export function CoursePlay() {
     const [progress, setProgress] = useState<any>(null);
     const [currentLesson, setCurrentLesson] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [showQuiz, setShowQuiz] = useState(false);
+    const [showAssignment, setShowAssignment] = useState(false);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -57,7 +61,7 @@ export function CoursePlay() {
         if (user?.role === 'student') {
              fetchInitialData();
         } else {
-             setIsLoading(false); // If not student, we will show "Access Denied" below or something else
+             setIsLoading(false);
         }
     }, [id, user]);
 
@@ -70,6 +74,8 @@ export function CoursePlay() {
 
     const handleLessonClick = async (lesson: any) => {
         setCurrentLesson(lesson);
+        setShowQuiz(false);
+        setShowAssignment(false);
         if (id && lesson.id) {
              progressApi.updateLastAccessedLesson(id, lesson.id).catch(console.error);
         }
@@ -85,6 +91,16 @@ export function CoursePlay() {
             }
         } catch (error) {
             console.error("Failed to mark complete", error);
+        }
+    };
+
+    const handleQuizComplete = async () => {
+        // Refresh progress after quiz completion
+        if (id) {
+            try {
+                const progRes = await progressApi.getCourseProgress(id);
+                setProgress(progRes.data?.data);
+            } catch (e) { console.error(e); }
         }
     };
 
@@ -135,9 +151,31 @@ export function CoursePlay() {
                     )}
                     
                     {currentLesson && (
-                        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent pointer-events-none">
+                        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 to-transparent">
                              <h2 className="text-2xl font-bold text-white mb-2 drop-shadow-lg">{currentLesson.title}</h2>
-                             <p className="text-gray-300 text-sm max-w-3xl drop-shadow-md">{currentLesson.description}</p>
+                             <p className="text-gray-300 text-sm max-w-3xl drop-shadow-md mb-3">{currentLesson.description}</p>
+                             
+                             {/* Quiz & Assignment buttons */}
+                             <div className="flex gap-3 pointer-events-auto">
+                                 {currentLesson.quiz && (
+                                     <button
+                                         onClick={() => setShowQuiz(true)}
+                                         className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-indigo-500/40 transition-all transform hover:scale-105 text-sm"
+                                     >
+                                         <HelpCircle size={18} />
+                                         Take Quiz
+                                     </button>
+                                 )}
+                                 {currentLesson.assignment && (
+                                     <button
+                                         onClick={() => setShowAssignment(true)}
+                                         className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-orange-500/40 transition-all transform hover:scale-105 text-sm"
+                                     >
+                                         <FileText size={18} />
+                                         View Assignment
+                                     </button>
+                                 )}
+                             </div>
                         </div>
                     )}
                     
@@ -186,6 +224,16 @@ export function CoursePlay() {
                                                          </h5>
                                                          <div className="flex gap-2 items-center mt-1 text-xs font-bold text-gray-400">
                                                              <span>{lesson.durationMinute || 0} min</span>
+                                                             {lesson.quiz && (
+                                                                 <span className="inline-flex items-center gap-0.5 text-[10px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-bold">
+                                                                     <HelpCircle size={10} /> Quiz
+                                                                 </span>
+                                                             )}
+                                                             {lesson.assignment && (
+                                                                 <span className="inline-flex items-center gap-0.5 text-[10px] text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded font-bold">
+                                                                     <FileText size={10} /> Task
+                                                                 </span>
+                                                             )}
                                                          </div>
                                                      </div>
                                                  </button>
@@ -197,6 +245,26 @@ export function CoursePlay() {
                      </div>
                 </div>
             </div>
+
+            {/* Quiz Modal */}
+            {showQuiz && currentLesson?.quiz && (
+                <QuizPlayer
+                    quizId={currentLesson.quiz.id}
+                    lessonTitle={currentLesson.title}
+                    onClose={() => setShowQuiz(false)}
+                    onComplete={handleQuizComplete}
+                />
+            )}
+
+            {/* Assignment Modal */}
+            {showAssignment && currentLesson?.assignment && (
+                <AssignmentPlayer
+                    assignmentId={currentLesson.assignment.id}
+                    lessonTitle={currentLesson.title}
+                    onClose={() => setShowAssignment(false)}
+                    onComplete={handleQuizComplete}
+                />
+            )}
         </div>
     );
 }
