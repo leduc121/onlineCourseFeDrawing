@@ -1,11 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, Check, Clock, Users, BookOpen } from 'lucide-react';
+import { Star, Check, Clock, Users, BookOpen, ChevronDown, ChevronUp, PlayCircle, Lock, FileText, HelpCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { EnrollButton } from '../components/EnrollButton';
 import { useAuth } from '../contexts/AuthContext';
 import { coursesApi } from '../api';
+
+interface LessonData {
+  id: string;
+  title: string;
+  description?: string;
+  videoUrl?: string;
+  durationMinute: number;
+  isTrial: boolean;
+  sortOrder: number;
+  quiz?: any;
+  assignment?: any;
+}
+
+interface SectionData {
+  id: string;
+  title: string;
+  description?: string;
+  sortOrder: number;
+  lessons: LessonData[];
+}
 
 export function CourseDetail() {
   const { id } = useParams();
@@ -13,6 +33,19 @@ export function CourseDetail() {
   const { user } = useAuth();
   const [course, setCourse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
+
+  const toggleSection = (idx: number) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        next.add(idx);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
@@ -22,41 +55,74 @@ export function CourseDetail() {
         const res = await coursesApi.getById(id);
         if (res.data?.data) {
           const c = res.data.data;
+          // Map sections with their lessons from backend response
+          const sections: SectionData[] = c.sections?.map((s: any) => ({
+            id: s.id,
+            title: s.title,
+            description: s.description,
+            sortOrder: s.sortOrder,
+            lessons: s.lessons?.map((l: any) => ({
+              id: l.id,
+              title: l.title,
+              description: l.description,
+              videoUrl: l.videoUrl,
+              durationMinute: l.durationMinute,
+              isTrial: l.isTrial,
+              sortOrder: l.sortOrder,
+              quiz: l.quiz,
+              assignment: l.assignment,
+            })) || [],
+          })) || [];
+
+          // Count total lessons
+          const totalLessons = sections.reduce((sum, s) => sum + s.lessons.length, 0);
+
           setCourse({
-             id: c.id,
-             title: c.title,
-             instructor: c.instructorName || 'Unknown Instructor',
-             price: c.price,
-             rating: 5.0, // Mock or map from response
-             reviews: 0,
-             students: 0,
-             duration: c.totalDurationMinutes ? `${Math.round(c.totalDurationMinutes / 60)} hrs` : 'N/A',
-             description: c.description || 'No description available.',
-             thumbnailUrl: c.thumbnailUrl || 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-             curriculum: c.sections?.map((s: any) => ({
-                 title: s.title,
-                 duration: 'N/A', // Update with actual structure if lesson durations exist
-                 free: false // Update with actual logic
-             })) || [],
-             features: ['High quality video content', 'Downloadable resources', 'Certificate of completion', 'Lifetime access']
+            id: c.id,
+            title: c.title,
+            instructor: c.instructorName || 'Unknown Instructor',
+            price: c.price,
+            rating: 5.0,
+            reviews: 0,
+            students: 0,
+            duration: c.totalDurationMinutes ? (c.totalDurationMinutes >= 60 ? `${Math.round(c.totalDurationMinutes / 60)} hrs` : `${c.totalDurationMinutes} min`) : 'N/A',
+            description: c.description || 'No description available.',
+            thumbnailUrl: c.thumbnailUrl || 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
+            sections,
+            totalLessons,
+            features: ['High quality video content', 'Downloadable resources', 'Certificate of completion', 'Lifetime access']
           });
+
+          // Expand first section by default
+          if (sections.length > 0) {
+            setExpandedSections(new Set([0]));
+          }
         }
       } catch (error) {
-         console.error("Error fetching course detail:", error);
+        console.error("Error fetching course detail:", error);
       } finally {
-         setIsLoading(false);
+        setIsLoading(false);
       }
     };
     fetchCourseDetails();
   }, [id]);
 
   if (isLoading) {
-      return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">Loading course...</div>;
+    return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">Loading course...</div>;
   }
 
   if (!course) {
-      return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">Course not found.</div>;
+    return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">Course not found.</div>;
   }
+
+  const formatDuration = (minutes: number) => {
+    if (minutes >= 60) {
+      const hrs = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+    }
+    return `${minutes} min`;
+  };
 
   return <div className="min-h-screen bg-[#faf8f5] pb-20">
     {/* Hero Section */}
@@ -88,7 +154,7 @@ export function CourseDetail() {
               </div>
               <div className="flex items-center">
                 <BookOpen className="w-5 h-5 mr-2" />
-                {course.curriculum.length} sections
+                {course.sections.length} sections • {course.totalLessons} lessons
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -143,27 +209,94 @@ export function CourseDetail() {
             <h2 className="text-3xl font-serif font-bold text-[#2d2d2d] mb-6">
               Course Curriculum
             </h2>
-            <div className="bg-white border border-[#2d2d2d]/10 divide-y divide-[#2d2d2d]/10">
-              {course.curriculum.length > 0 ? course.curriculum.map((lesson: any, idx: number) => <div key={idx} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-[#faf8f5] rounded-full flex items-center justify-center mr-4 text-[#2d2d2d] font-bold text-sm border border-[#2d2d2d]/10">
-                    {idx + 1}
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-[#2d2d2d]">
-                      {lesson.title}
-                    </h4>
-                    <span className="text-xs text-gray-500">
-                      {lesson.duration}
-                    </span>
-                  </div>
-                </div>
-                {lesson.free ? <span className="text-xs font-bold text-[#87a878] bg-[#87a878]/10 px-2 py-1 rounded">
-                  PREVIEW
-                </span> : <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                  LOCKED
-                </span>}
-              </div>) : (
+            <p className="text-sm text-gray-500 mb-4">
+              {course.sections.length} sections • {course.totalLessons} lessons • {course.duration} total length
+            </p>
+            <div className="bg-white border border-[#2d2d2d]/10 rounded-lg overflow-hidden">
+              {course.sections.length > 0 ? course.sections.map((section: SectionData, sIdx: number) => {
+                const isExpanded = expandedSections.has(sIdx);
+                const sectionDuration = section.lessons.reduce((sum, l) => sum + l.durationMinute, 0);
+                const trialCount = section.lessons.filter(l => l.isTrial).length;
+
+                return <div key={section.id || sIdx} className="border-b border-[#2d2d2d]/10 last:border-b-0">
+                  {/* Section Header */}
+                  <button
+                    onClick={() => toggleSection(sIdx)}
+                    className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-500" /> : <ChevronDown className="w-5 h-5 text-gray-500" />}
+                      <div>
+                        <h4 className="font-semibold text-[#2d2d2d]">
+                          {section.title}
+                        </h4>
+                        {section.description && (
+                          <p className="text-xs text-gray-400 mt-0.5">{section.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 shrink-0 ml-4">
+                      <span>{section.lessons.length} lesson{section.lessons.length !== 1 ? 's' : ''}</span>
+                      <span>•</span>
+                      <span>{formatDuration(sectionDuration)}</span>
+                      {trialCount > 0 && (
+                        <>
+                          <span>•</span>
+                          <span className="text-[#87a878] font-medium">{trialCount} free</span>
+                        </>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Section Lessons */}
+                  {isExpanded && (
+                    <div className="bg-[#faf8f5]/50">
+                      {section.lessons.length > 0 ? section.lessons.map((lesson, lIdx) => (
+                        <div key={lesson.id || lIdx} className="pl-12 pr-4 py-3 flex items-center justify-between hover:bg-gray-50/80 transition-colors border-t border-[#2d2d2d]/5">
+                          <div className="flex items-center gap-3">
+                            {lesson.isTrial ? (
+                              <PlayCircle className="w-4 h-4 text-[#87a878]" />
+                            ) : (
+                              <Lock className="w-4 h-4 text-gray-400" />
+                            )}
+                            <div>
+                              <span className="text-sm text-[#2d2d2d]">{lesson.title}</span>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                {lesson.quiz && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                                    <HelpCircle className="w-3 h-3" /> Quiz
+                                  </span>
+                                )}
+                                {lesson.assignment && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
+                                    <FileText className="w-3 h-3" /> Assignment
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0 ml-4">
+                            <span className="text-xs text-gray-400">
+                              {formatDuration(lesson.durationMinute)}
+                            </span>
+                            {lesson.isTrial ? (
+                              <span className="text-[10px] font-bold text-[#87a878] bg-[#87a878]/10 px-2 py-0.5 rounded">
+                                PREVIEW
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
+                                LOCKED
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )) : (
+                        <div className="pl-12 pr-4 py-3 text-sm text-gray-400 italic">No lessons in this section.</div>
+                      )}
+                    </div>
+                  )}
+                </div>;
+              }) : (
                 <div className="p-4 text-gray-500">No sections added yet.</div>
               )}
             </div>

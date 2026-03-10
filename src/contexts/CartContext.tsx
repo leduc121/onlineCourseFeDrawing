@@ -63,9 +63,9 @@ export function CartProvider({
     if (!items.find(item => item.id === course.id)) {
       try {
         await cartApi.addItem({
-          courseId: course.id,
-          itemType: 0, // Buy
-          studentProfileId: course.studentProfileId
+          CourseId: course.id,
+          ItemType: 0, // Buy
+          StudentProfileId: course.studentProfileId
         });
         await fetchCart(); // Refresh cart from server
       } catch (error: any) {
