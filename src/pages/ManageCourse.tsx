@@ -66,13 +66,15 @@ export function ManageCourse() {
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [categories, setCategories] = useState<any[]>([]);
+  const [status, setStatus] = useState<string>('');
   
   const [sections, setSections] = useState<Section[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   // Track which lesson's quiz/assignment editor is open
-  const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null); // "sIndex-lIndex"
-  const [expandedAssignment, setExpandedAssignment] = useState<string | null>(null);
+  // Track which lesson's quiz/assignment editor is open (can have multiple open)
+  const [expandedQuizzes, setExpandedQuizzes] = useState<string[]>([]); // array of "sIndex-lIndex"
+  const [expandedAssignments, setExpandedAssignments] = useState<string[]>([]);
 
   // Assignment grader modal
   const [graderAssignment, setGraderAssignment] = useState<{ id: string; title: string; maxScore: number } | null>(null);
@@ -85,7 +87,7 @@ export function ManageCourse() {
           contentType: file.type || 'application/octet-stream',
           folder: folder
       });
-      const { uploadUrl, objectKey } = res.data.data;
+      const { uploadUrl } = res.data.data;
       
       await fetch(uploadUrl, {
           method: 'PUT',
@@ -139,6 +141,7 @@ export function ManageCourse() {
         setDifficultyLevel(typeof c.difficultyLevel === 'number' ? c.difficultyLevel : 0);
         setThumbnailUrl(c.thumbnailUrl || '');
         setCategoryId(c.categoryId || '');
+        setStatus(c.status || '');
         
         if (c.sections) {
           setSections(c.sections.map((s: any) => ({
@@ -173,6 +176,19 @@ export function ManageCourse() {
                  } : null,
              })) : []
           })));
+
+          // Auto-expand all existing quizzes and assignments
+          const quizKeys: string[] = [];
+          const assignmentKeys: string[] = [];
+          c.sections.forEach((s: any, sIdx: number) => {
+            s.lessons?.forEach((l: any, lIdx: number) => {
+              const key = `${sIdx}-${lIdx}`;
+              if (l.quiz) quizKeys.push(key);
+              if (l.assignment) assignmentKeys.push(key);
+            });
+          });
+          setExpandedQuizzes(quizKeys);
+          setExpandedAssignments(assignmentKeys);
         }
       }
     } catch (err) {
@@ -229,7 +245,7 @@ export function ManageCourse() {
 
   // ── Quiz handlers ─────────────────────────────────────────────
   const toggleQuizEditor = (key: string) => {
-    setExpandedQuiz(prev => prev === key ? null : key);
+    setExpandedQuizzes(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
 
   const addQuizToLesson = (sIndex: number, lIndex: number) => {
@@ -239,7 +255,7 @@ export function ManageCourse() {
       passingScore: 70,
       timeLimitMinutes: 10,
       questions: [{
-        content: 'Question 1?',
+        content: 'New Question',
         points: 1,
         answers: [
           { content: 'Answer A', isCorrect: true },
@@ -248,7 +264,9 @@ export function ManageCourse() {
       }]
     };
     setSections(newSections);
-    setExpandedQuiz(`${sIndex}-${lIndex}`);
+    if (!expandedQuizzes.includes(`${sIndex}-${lIndex}`)) {
+      setExpandedQuizzes([...expandedQuizzes, `${sIndex}-${lIndex}`]);
+    }
   };
 
   const removeQuizFromLesson = (sIndex: number, lIndex: number) => {
@@ -256,7 +274,7 @@ export function ManageCourse() {
     const newSections = [...sections];
     newSections[sIndex].lessons[lIndex].quiz = null;
     setSections(newSections);
-    setExpandedQuiz(null);
+    setExpandedQuizzes(prev => prev.filter(k => k !== `${sIndex}-${lIndex}`));
   };
 
   const updateQuizField = (sIndex: number, lIndex: number, field: string, value: any) => {
@@ -269,11 +287,11 @@ export function ManageCourse() {
   const addQuestion = (sIndex: number, lIndex: number) => {
     const newSections = [...sections];
     newSections[sIndex].lessons[lIndex].quiz!.questions.push({
-      content: '',
+      content: 'New Question',
       points: 1,
       answers: [
-        { content: '', isCorrect: true },
-        { content: '', isCorrect: false },
+        { content: 'Option 1', isCorrect: true },
+        { content: 'Option 2', isCorrect: false },
       ]
     });
     setSections(newSections);
@@ -320,18 +338,20 @@ export function ManageCourse() {
 
   // ── Assignment handlers ───────────────────────────────────────
   const toggleAssignmentEditor = (key: string) => {
-    setExpandedAssignment(prev => prev === key ? null : key);
+    setExpandedAssignments(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
 
   const addAssignmentToLesson = (sIndex: number, lIndex: number) => {
     const newSections = [...sections];
     newSections[sIndex].lessons[lIndex].assignment = {
       title: `Assignment - ${newSections[sIndex].lessons[lIndex].title}`,
-      instructions: '',
+      instructions: 'Please provide detailed instructions for this assignment.',
       maxScore: 100,
     };
     setSections(newSections);
-    setExpandedAssignment(`${sIndex}-${lIndex}`);
+    if (!expandedAssignments.includes(`${sIndex}-${lIndex}`)) {
+      setExpandedAssignments([...expandedAssignments, `${sIndex}-${lIndex}`]);
+    }
   };
 
   const removeAssignmentFromLesson = (sIndex: number, lIndex: number) => {
@@ -339,7 +359,7 @@ export function ManageCourse() {
     const newSections = [...sections];
     newSections[sIndex].lessons[lIndex].assignment = null;
     setSections(newSections);
-    setExpandedAssignment(null);
+    setExpandedAssignments(prev => prev.filter(k => k !== `${sIndex}-${lIndex}`));
   };
 
   const updateAssignmentField = (sIndex: number, lIndex: number, field: string, value: any) => {
@@ -410,7 +430,14 @@ export function ManageCourse() {
 
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.message || "Failed to save course.");
+      if (err.response?.data?.errors) {
+        const errorDetails = Object.entries(err.response.data.errors)
+          .map(([key, value]) => `${key}: ${(value as string[]).join(", ")}`)
+          .join("\n");
+        alert(`${err.response.data.message}\n\n${errorDetails}`);
+      } else {
+        alert(err.response?.data?.message || "Failed to save course.");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -425,7 +452,14 @@ export function ManageCourse() {
       loadCourse();
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.message || "Failed to update curriculum.");
+      if (err.response?.data?.errors) {
+        const errorDetails = Object.entries(err.response.data.errors)
+          .map(([key, value]) => `${key}: ${(value as string[]).join(", ")}`)
+          .join("\n");
+        alert(`${err.response.data.message}\n\n${errorDetails}`);
+      } else {
+        alert(err.response?.data?.message || "Failed to update curriculum.");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -433,7 +467,7 @@ export function ManageCourse() {
 
   const handleSubmitForReview = async () => {
     if(!id) return;
-    if(confirm("Submit this course for admin review? You cannot edit basic info while pending.")) {
+    if(confirm("Submit this course for admin review?")) {
         try {
             await coursesApi.submitForReview(id);
             alert("Submitted for review!");
@@ -454,8 +488,19 @@ export function ManageCourse() {
             <Link to="/instructor/dashboard" className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-50 border border-gray-100 transition-colors">
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </Link>
-            <h1 className="text-3xl font-serif font-bold text-[#2d2d2d]">
+            <h1 className="text-3xl font-serif font-bold text-[#2d2d2d] flex items-center gap-3">
                {isEditMode ? 'Edit Course' : 'Create New Course'}
+               {isEditMode && status && (
+                 <span className={`text-xs font-sans px-2 py-1 rounded-full uppercase tracking-wider ${
+                    status === 'Published' ? 'bg-green-100 text-green-700' :
+                    status === 'PendingReview' ? 'bg-orange-100 text-orange-700' :
+                    status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                    status === 'Approved' ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-700'
+                 }`}>
+                   {status}
+                 </span>
+               )}
             </h1>
           </div>
           <div className="flex space-x-4">
@@ -600,8 +645,8 @@ export function ManageCourse() {
                                  <div className="p-4 space-y-3">
                                      {section.lessons.map((lesson, lIndex) => {
                                        const lessonKey = `${sIndex}-${lIndex}`;
-                                       const isQuizOpen = expandedQuiz === lessonKey;
-                                       const isAssignmentOpen = expandedAssignment === lessonKey;
+                                       const isQuizOpen = expandedQuizzes.includes(lessonKey);
+                                       const isAssignmentOpen = expandedAssignments.includes(lessonKey);
                                        return (
                                          <div key={lIndex} className="bg-white border border-gray-200 p-3 rounded-md shadow-sm ml-6 flex flex-col gap-3">
                                             <div className="flex items-center justify-between">
