@@ -72,8 +72,9 @@ export function ManageCourse() {
   const [isUploading, setIsUploading] = useState(false);
 
   // Track which lesson's quiz/assignment editor is open
-  const [expandedQuiz, setExpandedQuiz] = useState<string | null>(null); // "sIndex-lIndex"
-  const [expandedAssignment, setExpandedAssignment] = useState<string | null>(null);
+  // Track which lesson's quiz/assignment editor is open (can have multiple open)
+  const [expandedQuizzes, setExpandedQuizzes] = useState<string[]>([]); // array of "sIndex-lIndex"
+  const [expandedAssignments, setExpandedAssignments] = useState<string[]>([]);
 
   // Assignment grader modal
   const [graderAssignment, setGraderAssignment] = useState<{ id: string; title: string; maxScore: number } | null>(null);
@@ -86,7 +87,7 @@ export function ManageCourse() {
           contentType: file.type || 'application/octet-stream',
           folder: folder
       });
-      const { uploadUrl, objectKey } = res.data.data;
+      const { uploadUrl } = res.data.data;
       
       await fetch(uploadUrl, {
           method: 'PUT',
@@ -175,6 +176,19 @@ export function ManageCourse() {
                  } : null,
              })) : []
           })));
+
+          // Auto-expand all existing quizzes and assignments
+          const quizKeys: string[] = [];
+          const assignmentKeys: string[] = [];
+          c.sections.forEach((s: any, sIdx: number) => {
+            s.lessons?.forEach((l: any, lIdx: number) => {
+              const key = `${sIdx}-${lIdx}`;
+              if (l.quiz) quizKeys.push(key);
+              if (l.assignment) assignmentKeys.push(key);
+            });
+          });
+          setExpandedQuizzes(quizKeys);
+          setExpandedAssignments(assignmentKeys);
         }
       }
     } catch (err) {
@@ -231,7 +245,7 @@ export function ManageCourse() {
 
   // ── Quiz handlers ─────────────────────────────────────────────
   const toggleQuizEditor = (key: string) => {
-    setExpandedQuiz(prev => prev === key ? null : key);
+    setExpandedQuizzes(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
 
   const addQuizToLesson = (sIndex: number, lIndex: number) => {
@@ -250,7 +264,9 @@ export function ManageCourse() {
       }]
     };
     setSections(newSections);
-    setExpandedQuiz(`${sIndex}-${lIndex}`);
+    if (!expandedQuizzes.includes(`${sIndex}-${lIndex}`)) {
+      setExpandedQuizzes([...expandedQuizzes, `${sIndex}-${lIndex}`]);
+    }
   };
 
   const removeQuizFromLesson = (sIndex: number, lIndex: number) => {
@@ -258,7 +274,7 @@ export function ManageCourse() {
     const newSections = [...sections];
     newSections[sIndex].lessons[lIndex].quiz = null;
     setSections(newSections);
-    setExpandedQuiz(null);
+    setExpandedQuizzes(prev => prev.filter(k => k !== `${sIndex}-${lIndex}`));
   };
 
   const updateQuizField = (sIndex: number, lIndex: number, field: string, value: any) => {
@@ -322,7 +338,7 @@ export function ManageCourse() {
 
   // ── Assignment handlers ───────────────────────────────────────
   const toggleAssignmentEditor = (key: string) => {
-    setExpandedAssignment(prev => prev === key ? null : key);
+    setExpandedAssignments(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   };
 
   const addAssignmentToLesson = (sIndex: number, lIndex: number) => {
@@ -333,7 +349,9 @@ export function ManageCourse() {
       maxScore: 100,
     };
     setSections(newSections);
-    setExpandedAssignment(`${sIndex}-${lIndex}`);
+    if (!expandedAssignments.includes(`${sIndex}-${lIndex}`)) {
+      setExpandedAssignments([...expandedAssignments, `${sIndex}-${lIndex}`]);
+    }
   };
 
   const removeAssignmentFromLesson = (sIndex: number, lIndex: number) => {
@@ -341,7 +359,7 @@ export function ManageCourse() {
     const newSections = [...sections];
     newSections[sIndex].lessons[lIndex].assignment = null;
     setSections(newSections);
-    setExpandedAssignment(null);
+    setExpandedAssignments(prev => prev.filter(k => k !== `${sIndex}-${lIndex}`));
   };
 
   const updateAssignmentField = (sIndex: number, lIndex: number, field: string, value: any) => {
@@ -627,8 +645,8 @@ export function ManageCourse() {
                                  <div className="p-4 space-y-3">
                                      {section.lessons.map((lesson, lIndex) => {
                                        const lessonKey = `${sIndex}-${lIndex}`;
-                                       const isQuizOpen = expandedQuiz === lessonKey;
-                                       const isAssignmentOpen = expandedAssignment === lessonKey;
+                                       const isQuizOpen = expandedQuizzes.includes(lessonKey);
+                                       const isAssignmentOpen = expandedAssignments.includes(lessonKey);
                                        return (
                                          <div key={lIndex} className="bg-white border border-gray-200 p-3 rounded-md shadow-sm ml-6 flex flex-col gap-3">
                                             <div className="flex items-center justify-between">
