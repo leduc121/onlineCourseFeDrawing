@@ -123,8 +123,8 @@ export function CustomerDashboard() {
               Welcome back, {user?.name}! Ready to create?
             </p>
             <Button
-              variant="outline"
-              className="mt-4 border-purple-600 text-purple-600 hover:bg-purple-50"
+              variant="primary"
+              className="mt-4"
               onClick={() => navigate('/membership')}
             >
               Upgrade Membership

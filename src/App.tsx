@@ -24,6 +24,7 @@ import { PostList } from './pages/PostList';
 import { PostDetail } from './pages/PostDetail';
 import { ManagePost } from './pages/ManagePost';
 import { AdminPostReview } from './pages/AdminPostReview';
+import { Membership } from './pages/Membership';
 
 export function App() {
   return <AuthProvider>
@@ -40,6 +41,7 @@ export function App() {
             <Route path="/about" element={<AboutUs />} />
             <Route path="/courses" element={<CourseCatalog />} />
             <Route path="/course/:id" element={<CourseDetail />} />
+            <Route path="/membership" element={<Membership />} />
             <Route path="/posts" element={<PostList />} />
             <Route path="/posts/:id" element={<PostDetail />} />
 
