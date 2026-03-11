@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Users, Plus, Trash2, X, ChevronLeft, ChevronRight, Eye, BookOpen, Clock, DollarSign, Tag, PieChart } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { usersApi, coursesApi, categoriesApi } from '../api';
+import { usersApi, coursesApi, categoriesApi, paymentsApi } from '../api';
 import { AdminCouponManager } from '../components/AdminCouponManager';
 
 // --- Modal Component ---
@@ -65,7 +65,9 @@ export function AdminDashboard() {
   const [isCategoryLoading, setIsCategoryLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [activeTab, setActiveTab] = useState<'overview' | 'coupons'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'coupons' | 'transactions'>('overview');
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
 
   // Modal states
   const [showAllUsers, setShowAllUsers] = useState(false);
@@ -102,10 +104,35 @@ export function AdminDashboard() {
       setPendingCourses(pendingRes.data?.data?.items || []);
 
       await fetchCategories();
+      await fetchTransactions();
     } catch (error) {
       console.error("Error fetching admin data:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchTransactions = async () => {
+    try {
+      setIsLoadingTransactions(true);
+      const res = await (paymentsApi as any).getAllTransactions();
+      setTransactions(res.data?.data || []);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+    } finally {
+      setIsLoadingTransactions(false);
+    }
+  };
+
+  const handleApproveTransaction = async (txnRef: string) => {
+    if(!confirm("Are you sure you want to manually approve this transaction and enroll the student?")) return;
+    try {
+      await (paymentsApi as any).approveTransaction(txnRef);
+      alert("Transaction approved successfully!");
+      await fetchTransactions();
+    } catch (error) {
+      console.error("Error approving transaction:", error);
+      alert("Failed to approve transaction.");
     }
   };
 
@@ -273,12 +300,83 @@ export function AdminDashboard() {
                 <Tag size={18} />
                 Manage Coupons
              </button>
+             <button 
+               onClick={() => setActiveTab('transactions')}
+               className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'transactions' ? 'bg-[#ff8a80] text-[#2d2d2d] shadow-lg shadow-[#ff8a80]/20' : 'text-gray-400 hover:text-gray-600'}`}
+             >
+                <DollarSign size={18} />
+                Transactions
+             </button>
           </div>
         </div>
 
         {activeTab === 'coupons' ? (
           <div className="bg-white p-8 border border-[#2d2d2d]/10 rounded-2xl shadow-sm">
              <AdminCouponManager />
+          </div>
+        ) : activeTab === 'transactions' ? (
+          <div className="bg-white border border-[#2d2d2d]/10 rounded-2xl shadow-sm overflow-hidden">
+             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                <h3 className="text-xl font-bold font-serif">All Transactions</h3>
+                <Button variant="outline" size="sm" onClick={fetchTransactions} disabled={isLoadingTransactions}>
+                   {isLoadingTransactions ? "Refreshing..." : "Refresh"}
+                </Button>
+             </div>
+             <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                   <thead className="bg-gray-50">
+                      <tr>
+                         <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Ref / Date</th>
+                         <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Customer</th>
+                         <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Item</th>
+                         <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Amount</th>
+                         <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+                         <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Actions</th>
+                      </tr>
+                   </thead>
+                   <tbody className="bg-white divide-y divide-gray-200">
+                      {transactions.length > 0 ? transactions.map(txn => (
+                         <tr key={txn.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4">
+                               <div className="text-sm font-bold text-[#2d2d2d]">{txn.txnRef}</div>
+                               <div className="text-xs text-gray-400">{new Date(txn.createdAt).toLocaleString()}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                               <div className="text-sm font-medium text-[#2d2d2d]">{txn.userFullName || 'N/A'}</div>
+                               <div className="text-xs text-gray-500">{txn.userEmail || 'N/A'}</div>
+                            </td>
+                            <td className="px-6 py-4">
+                               <div className="text-sm text-gray-600 truncate max-w-[200px]">
+                                  {txn.courseTitle || (txn.cartItems?.length > 0 ? `${txn.cartItems[0].courseTitle}${txn.cartItems.length > 1 ? ' + ' + (txn.cartItems.length - 1) + ' more' : ''}` : 'N/A')}
+                               </div>
+                            </td>
+                            <td className="px-6 py-4">
+                               <div className="text-sm font-bold text-[#2d2d2d]">${txn.amount}</div>
+                               {txn.discountAmount > 0 && <div className="text-xs text-green-600">-${txn.discountAmount} disk</div>}
+                            </td>
+                            <td className="px-6 py-4">
+                               <span className={`px-2 py-1 text-[10px] font-black rounded-full uppercase ${
+                                  txn.status === 1 ? 'bg-green-100 text-green-700' :
+                                  txn.status === 0 ? 'bg-orange-100 text-orange-700' :
+                                  'bg-red-100 text-red-700'
+                               }`}>
+                                  {txn.status === 1 ? 'Success' : txn.status === 0 ? 'Pending' : 'Failed'}
+                               </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                               {txn.status === 0 && (
+                                  <Button size="sm" onClick={() => handleApproveTransaction(txn.txnRef)} className="text-[10px] py-1 h-auto">
+                                     Approve
+                                  </Button>
+                               )}
+                            </td>
+                         </tr>
+                      )) : (
+                         <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-500">No transactions found</td></tr>
+                      )}
+                   </tbody>
+                </table>
+             </div>
           </div>
         ) : (
           <>

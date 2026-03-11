@@ -81,6 +81,8 @@ export const paymentsApi = {
     getMyTransactions: () => api.get('/payments/my-transactions'),
     createCheckoutSession: (data: any) => api.post('/payments/create-checkout-session', data),
     verifySession: (sessionId: string) => api.get(`/payments/verify-session/${sessionId}`),
+    getAllTransactions: () => api.get('/payments/all'),
+    approveTransaction: (txnRef: string) => api.post(`/payments/${txnRef}/approve`),
 };
 
 export const cartApi = {
