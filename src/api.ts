@@ -115,4 +115,28 @@ export const postsApi = {
     review: (id: string, data: { approved: boolean, rejectionReason?: string }) => api.post(`/Posts/${id}/review`, data),
 };
 
+export const assignmentsApi = {
+    getById: (id: string) => api.get(`/Assignments/${id}`),
+    submit: (id: string, data: any) => api.post(`/Assignments/${id}/submit`, data),
+    getMySubmission: (id: string) => api.get(`/Assignments/${id}/my-submission`),
+    getSubmissions: (id: string) => api.get(`/Assignments/${id}/submissions`),
+    grade: (submissionId: string, data: any) => api.post(`/Assignments/submissions/${submissionId}/grade`, data),
+};
+
+export const quizzesApi = {
+    getById: (id: string) => api.get(`/Quizzes/${id}`),
+    submit: (id: string, answers: any[]) => api.post(`/Quizzes/${id}/submit`, answers),
+    getMySubmissions: (quizId: string) => api.get(`/Quizzes/${quizId}/submissions`),
+    getSubmissionDetail: (submissionId: string) => api.get(`/Quizzes/submissions/${submissionId}`),
+};
+
+export const couponsApi = {
+    getAll: () => api.get('/Coupons'),
+    getById: (id: string) => api.get(`/Coupons/${id}`),
+    create: (data: any) => api.post('/Coupons', data),
+    update: (id: string, data: any) => api.put(`/Coupons/${id}`, data),
+    delete: (id: string) => api.delete(`/Coupons/${id}`),
+    validate: (code: string, courseId?: string) => api.post('/Coupons/validate', { code, courseId }),
+};
+
 export default api;
