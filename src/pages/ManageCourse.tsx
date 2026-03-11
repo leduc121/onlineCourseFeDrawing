@@ -66,6 +66,7 @@ export function ManageCourse() {
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [categories, setCategories] = useState<any[]>([]);
+  const [status, setStatus] = useState<string>('');
   
   const [sections, setSections] = useState<Section[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -139,6 +140,7 @@ export function ManageCourse() {
         setDifficultyLevel(typeof c.difficultyLevel === 'number' ? c.difficultyLevel : 0);
         setThumbnailUrl(c.thumbnailUrl || '');
         setCategoryId(c.categoryId || '');
+        setStatus(c.status || '');
         
         if (c.sections) {
           setSections(c.sections.map((s: any) => ({
@@ -239,7 +241,7 @@ export function ManageCourse() {
       passingScore: 70,
       timeLimitMinutes: 10,
       questions: [{
-        content: 'Question 1?',
+        content: 'New Question',
         points: 1,
         answers: [
           { content: 'Answer A', isCorrect: true },
@@ -269,11 +271,11 @@ export function ManageCourse() {
   const addQuestion = (sIndex: number, lIndex: number) => {
     const newSections = [...sections];
     newSections[sIndex].lessons[lIndex].quiz!.questions.push({
-      content: '',
+      content: 'New Question',
       points: 1,
       answers: [
-        { content: '', isCorrect: true },
-        { content: '', isCorrect: false },
+        { content: 'Option 1', isCorrect: true },
+        { content: 'Option 2', isCorrect: false },
       ]
     });
     setSections(newSections);
@@ -327,7 +329,7 @@ export function ManageCourse() {
     const newSections = [...sections];
     newSections[sIndex].lessons[lIndex].assignment = {
       title: `Assignment - ${newSections[sIndex].lessons[lIndex].title}`,
-      instructions: '',
+      instructions: 'Please provide detailed instructions for this assignment.',
       maxScore: 100,
     };
     setSections(newSections);
@@ -410,7 +412,14 @@ export function ManageCourse() {
 
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.message || "Failed to save course.");
+      if (err.response?.data?.errors) {
+        const errorDetails = Object.entries(err.response.data.errors)
+          .map(([key, value]) => `${key}: ${(value as string[]).join(", ")}`)
+          .join("\n");
+        alert(`${err.response.data.message}\n\n${errorDetails}`);
+      } else {
+        alert(err.response?.data?.message || "Failed to save course.");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -425,7 +434,14 @@ export function ManageCourse() {
       loadCourse();
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.message || "Failed to update curriculum.");
+      if (err.response?.data?.errors) {
+        const errorDetails = Object.entries(err.response.data.errors)
+          .map(([key, value]) => `${key}: ${(value as string[]).join(", ")}`)
+          .join("\n");
+        alert(`${err.response.data.message}\n\n${errorDetails}`);
+      } else {
+        alert(err.response?.data?.message || "Failed to update curriculum.");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -433,7 +449,7 @@ export function ManageCourse() {
 
   const handleSubmitForReview = async () => {
     if(!id) return;
-    if(confirm("Submit this course for admin review? You cannot edit basic info while pending.")) {
+    if(confirm("Submit this course for admin review?")) {
         try {
             await coursesApi.submitForReview(id);
             alert("Submitted for review!");
@@ -454,8 +470,19 @@ export function ManageCourse() {
             <Link to="/instructor/dashboard" className="p-2 bg-white rounded-full shadow-sm hover:bg-gray-50 border border-gray-100 transition-colors">
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </Link>
-            <h1 className="text-3xl font-serif font-bold text-[#2d2d2d]">
+            <h1 className="text-3xl font-serif font-bold text-[#2d2d2d] flex items-center gap-3">
                {isEditMode ? 'Edit Course' : 'Create New Course'}
+               {isEditMode && status && (
+                 <span className={`text-xs font-sans px-2 py-1 rounded-full uppercase tracking-wider ${
+                    status === 'Published' ? 'bg-green-100 text-green-700' :
+                    status === 'PendingReview' ? 'bg-orange-100 text-orange-700' :
+                    status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                    status === 'Approved' ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-700'
+                 }`}>
+                   {status}
+                 </span>
+               )}
             </h1>
           </div>
           <div className="flex space-x-4">
