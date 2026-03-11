@@ -80,6 +80,7 @@ export const instructorProfilesApi = {
 export const paymentsApi = {
     getMyTransactions: () => api.get('/payments/my-transactions'),
     createCheckoutSession: (data: any) => api.post('/payments/create-checkout-session', data),
+    verifySession: (sessionId: string) => api.get(`/payments/verify-session/${sessionId}`),
 };
 
 export const cartApi = {
@@ -102,45 +103,16 @@ export const progressApi = {
     updateLastAccessedLesson: (courseId: string, lessonId: string) => api.patch(`/Progress/courses/${courseId}/last-accessed-lesson/${lessonId}`)
 };
 
-export const quizzesApi = {
-    getById: (id: string) => api.get(`/Quizzes/${id}`),
-    createForLesson: (lessonId: string, data: any) => api.post(`/Quizzes/lesson/${lessonId}`, data),
-    update: (id: string, data: any) => api.put(`/Quizzes/${id}`, data),
-    delete: (id: string) => api.delete(`/Quizzes/${id}`),
-    submit: (id: string, answers: any[]) => api.post(`/Quizzes/${id}/submit`, answers),
-    getMySubmissions: (id: string) => api.get(`/Quizzes/${id}/submissions`),
-    getSubmissionDetail: (submissionId: string) => api.get(`/Quizzes/submissions/${submissionId}`),
-};
-
-export const assignmentsApi = {
-    getById: (id: string) => api.get(`/Assignments/${id}`),
-    createForLesson: (lessonId: string, data: any) => api.post(`/Assignments/lesson/${lessonId}`, data),
-    update: (id: string, data: any) => api.put(`/Assignments/${id}`, data),
-    delete: (id: string) => api.delete(`/Assignments/${id}`),
-    submit: (id: string, data: any) => api.post(`/Assignments/${id}/submit`, data),
-    getMySubmission: (id: string) => api.get(`/Assignments/${id}/my-submission`),
-    getSubmissions: (id: string) => api.get(`/Assignments/${id}/submissions`),
-    grade: (submissionId: string, data: any) => api.post(`/Assignments/submissions/${submissionId}/grade`, data),
-};
-
-export const notificationsApi = {
-    getAll: (userId: string) => api.get(`/notifications?userId=${userId}`),
-    markRead: (id: string) => api.patch(`/notifications/${id}/read`),
-    markAllRead: (userId: string) => api.patch(`/notifications/read-all?userId=${userId}`),
-};
-
-export const couponsApi = {
-    validate: (data: { code: string; courseId: string }) => api.post('/coupons/validate', data),
-    getAll: () => api.get('/coupons'),
-    create: (data: any) => api.post('/coupons', data),
-    delete: (id: string) => api.delete(`/coupons/${id}`),
-};
-
-export const giftsApi = {
-    checkout: (data: any) => api.post('/gifts/checkout', data),
-    respond: (giftId: string, data: { accept: boolean }) => api.post(`/gifts/${giftId}/respond`, data),
-    getReceived: () => api.get('/gifts/received'),
-    getSent: () => api.get('/gifts/sent'),
+export const postsApi = {
+    getAll: (pageIndex = 1, pageSize = 10) => api.get(`/Posts?pageIndex=${pageIndex}&pageSize=${pageSize}`),
+    getById: (id: string) => api.get(`/Posts/${id}`),
+    getPendingReview: (pageIndex = 1, pageSize = 10) => api.get(`/Posts/pending-review?pageIndex=${pageIndex}&pageSize=${pageSize}`),
+    getMyPosts: (pageIndex = 1, pageSize = 10) => api.get(`/Posts/my-posts?pageIndex=${pageIndex}&pageSize=${pageSize}`),
+    create: (data: any) => api.post('/Posts', data),
+    update: (id: string, data: any) => api.put(`/Posts/${id}`, data),
+    delete: (id: string) => api.delete(`/Posts/${id}`),
+    submitForReview: (id: string) => api.post(`/Posts/${id}/submit-for-review`),
+    review: (id: string, data: { approved: boolean, rejectionReason?: string }) => api.post(`/Posts/${id}/review`, data),
 };
 
 export default api;

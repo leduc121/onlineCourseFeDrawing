@@ -61,6 +61,9 @@ export function Navigation() {
                 <Link to="/about" className="text-[#2d2d2d] hover:text-[#ff8a80] font-medium transition-colors">
                   About
                 </Link>
+                <Link to="/posts" className="text-[#2d2d2d] hover:text-[#ff8a80] font-medium transition-colors">
+                  Posts
+                </Link>
               </>
             )}
 
@@ -80,11 +83,20 @@ export function Navigation() {
               {/* Auth Section */}
               {user ? (
                 <div className="flex items-center space-x-4">
-                  <NotificationPopover />
-                  <Link to={getDashboardLink()} className="flex items-center space-x-2 text-[#2d2d2d] hover:text-[#ff8a80]">
-                    <User className="w-5 h-5" />
-                    <span className="font-medium">Dashboard</span>
-                  </Link>
+                    <Link to={getDashboardLink()} className="flex items-center space-x-2 text-[#2d2d2d] hover:text-[#ff8a80]">
+                      <User className="w-5 h-5" />
+                      <span className="font-medium">Dashboard</span>
+                    </Link>
+                    {(user.role === 'instructor' || user.role === 'staff') && (
+                      <Link to="/instructor/posts" className="text-[#2d2d2d] hover:text-[#ff8a80]">
+                        <span className="font-medium text-sm">Manage Posts</span>
+                      </Link>
+                    )}
+                    {user.role === 'admin' && (
+                      <Link to="/admin/posts" className="text-[#2d2d2d] hover:text-[#ff8a80]">
+                        <span className="font-medium text-sm">Review Posts</span>
+                      </Link>
+                    )}
                   <Link to="/profile" className="flex items-center space-x-2 text-[#2d2d2d] hover:text-[#ff8a80]">
                     <span className="font-medium">Profile</span>
                   </Link>
@@ -125,6 +137,9 @@ export function Navigation() {
             </Link>
             <Link to="/instructors" className="block text-[#2d2d2d] font-medium py-2">
               Instructors
+            </Link>
+            <Link to="/posts" className="block text-[#2d2d2d] font-medium py-2">
+              Posts
             </Link>
             {user ? (
               <>

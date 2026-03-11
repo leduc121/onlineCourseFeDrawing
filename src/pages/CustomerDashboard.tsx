@@ -42,24 +42,25 @@ export function CustomerDashboard() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const txnRef = params.get('txnRef');
-    if (txnRef) {
-      // Auto-activate for local demo
-      import('axios').then(axios => {
-        axios.default.get(`http://localhost:5215/api/payments/simulate-success/${txnRef}`)
-          .then(() => {
-            // Remove txnRef from URL without reloading
-            const url = new URL(window.location.href);
-            url.searchParams.delete('txnRef');
-            window.history.replaceState({}, '', url.pathname);
-            // Refresh data
-            fetchDashboardData();
-          })
-          .catch(err => console.error("Auto-activation failed", err));
-      });
-    }
+    const sessionId = params.get('session_id');
 
-    fetchDashboardData();
+    const verifyAndFetch = async () => {
+      if (sessionId) {
+        try {
+          setIsLoading(true);
+          await paymentsApi.verifySession(sessionId);
+          // Remove session_id from URL without reloading
+          const url = new URL(window.location.href);
+          url.searchParams.delete('session_id');
+          window.history.replaceState({}, '', url.pathname);
+        } catch (error) {
+          console.error("Payment verification failed:", error);
+        }
+      }
+      fetchDashboardData();
+    };
+
+    verifyAndFetch();
   }, []);
 
   const handleAddKid = async (e: React.FormEvent) => {

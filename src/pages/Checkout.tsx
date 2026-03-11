@@ -84,7 +84,7 @@ export function Checkout() {
       }
 
       const res = await cartApi.checkout({
-          successUrl: window.location.origin + '/dashboard',
+          successUrl: window.location.origin + '/dashboard?session_id={CHECKOUT_SESSION_ID}',
           cancelUrl: window.location.origin + '/checkout'
       });
 
