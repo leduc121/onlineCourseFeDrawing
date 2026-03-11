@@ -27,10 +27,10 @@ export const authApi = {
     getMe: () => api.get('/Auth/me'),
 };
 
-export const streakApi = {
-    getStreak: () => api.get('/Streak'),
-    recordVisit: () => api.post('/Streak/visit', {}),
-    recordWatch: (minutes: number) => api.post('/Streak/watch', minutes) // Check if backend expects int or object
+export const studySchedulesApi = {
+    getByStudent: (studentProfileId: string) => api.get(`/study-schedules/student/${studentProfileId}`),
+    create: (data: any) => api.post('/study-schedules', data),
+    delete: (id: string) => api.delete(`/study-schedules/${id}`),
 };
 
 export const usersApi = {

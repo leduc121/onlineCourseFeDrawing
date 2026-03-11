@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { WeeklyStreak } from '../components/WeeklyStreak';
+import { StudyScheduleManager } from '../components/StudyScheduleManager';
 import { studentProfilesApi, paymentsApi } from '../api';
 
 export function CustomerDashboard() {
@@ -103,13 +104,6 @@ export function CustomerDashboard() {
     return <div className="min-h-screen bg-[#faf8f5] py-12 flex justify-center text-[#2d2d2d] font-bold">Loading...</div>;
   }
 
-  const myCourses = [{
-    id: '1',
-    title: 'Watercolor Wonderland',
-    progress: 65,
-    nextLesson: 'Mixing Purple and Orange',
-    image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'
-  }];
 
   return (
     <div className="min-h-screen bg-[#faf8f5] py-12">
@@ -148,7 +142,7 @@ export function CustomerDashboard() {
           </div>
         </div>
 
-        <WeeklyStreak />
+        {/* <WeeklyStreak /> moved to Kid Details */}
 
         {/* Kids Management Section */}
         <div className="mb-12">
@@ -204,32 +198,6 @@ export function CustomerDashboard() {
           </div>
         </div>
 
-        <h2 className="text-2xl font-serif font-bold text-[#2d2d2d] mb-6">
-          Continue Learning
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-          {myCourses.map(course => (
-            <div key={course.id} className="bg-white border border-[#2d2d2d]/10 p-6 flex items-center space-x-6 hover:shadow-lg transition-shadow">
-              <div className="w-32 h-24 flex-shrink-0 bg-gray-200">
-                <img src={course.image} alt={course.title} className="w-full h-full object-cover" />
-              </div>
-              <div className="flex-grow">
-                <h3 className="font-bold text-[#2d2d2d] text-lg mb-1">
-                  {course.title}
-                </h3>
-                <p className="text-sm text-gray-500 mb-3">
-                  Next: {course.nextLesson}
-                </p>
-                <div className="w-full bg-gray-100 h-2 rounded-full mb-3">
-                  <div className="bg-[#ff8a80] h-full rounded-full" style={{ width: `${course.progress}%` }} />
-                </div>
-                <Button size="sm" variant="outline" className="w-full">
-                  <PlayCircle className="w-4 h-4 mr-2" /> Continue
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
 
         <h2 className="text-2xl font-serif font-bold text-[#2d2d2d] mb-6">
           Order History
@@ -339,7 +307,7 @@ export function CustomerDashboard() {
         {/* Kid Details Modal */}
         {selectedKidDetails && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-white rounded-2xl p-8 max-w-lg w-full relative max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-white rounded-2xl p-8 max-w-2xl w-full relative max-h-[90vh] overflow-hidden flex flex-col">
               <button 
                 onClick={() => setSelectedKidDetails(null)}
                 className="absolute top-4 right-4 text-gray-400 hover:text-[#2d2d2d]"
@@ -369,10 +337,23 @@ export function CustomerDashboard() {
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="font-bold text-[#2d2d2d] mb-3 flex items-center gap-2">
-                    Learning Progress
-                  </h4>
+                <div className="space-y-6">
+                    <WeeklyStreak 
+                        studentName={selectedKidDetails.studentFullName.split(' ')[0]}
+                        currentStreak={selectedKidDetails.currentStreak || 0}
+                        visitsCount={selectedKidDetails.currentStreak > 0 ? 1 : 0} // Simple mapping for now
+                        showSchedule={false} // We have a separate manager below
+                    />
+
+                    <StudyScheduleManager 
+                        studentProfileId={selectedKidDetails.id}
+                        studentName={selectedKidDetails.studentFullName.split(' ')[0]}
+                    />
+
+                    <h4 className="font-bold text-[#2d2d2d] mb-3 flex items-center gap-2">
+                        Tiến độ học tập
+                    </h4>
+                </div>
                   {isLoadingKidCourses ? (
                     <div className="text-center py-8 text-gray-400 text-sm italic">Loading courses...</div>
                   ) : selectedKidCourses.length > 0 ? (
@@ -402,19 +383,18 @@ export function CustomerDashboard() {
                     </div>
                   )}
                 </div>
-              </div>
 
-              <div className="pt-6 shrink-0 mt-4 border-t border-gray-100">
-                <Button 
-                   onClick={() => navigate('/courses')} 
-                   className="w-full"
-                >
-                  Find More Courses for {selectedKidDetails.studentFullName.split(' ')[0]}
-                </Button>
+                <div className="pt-6 shrink-0 mt-4 border-t border-gray-100">
+                  <Button 
+                    onClick={() => navigate('/courses')} 
+                    className="w-full"
+                  >
+                    Tìm thêm khóa học cho {selectedKidDetails.studentFullName.split(' ')[0]}
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     </div>
   );
