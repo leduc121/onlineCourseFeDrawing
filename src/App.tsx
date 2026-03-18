@@ -30,6 +30,7 @@ import { PaymentManagementPage } from './pages/PaymentManagementPage';
 import { SupportPage } from './pages/SupportPage';
 import { BundleCatalogPage } from './pages/BundleCatalogPage';
 import { AdminPanel } from './pages/AdminPanel';
+import { DrawingAssignmentPage } from './pages/DrawingAssignmentPage';
 
 export function App() {
   return <AuthProvider>
@@ -71,6 +72,9 @@ export function App() {
             </ProtectedRoute>} />
             <Route path="/student/support" element={<ProtectedRoute allowedRoles={['student']}>
               <SupportPage />
+            </ProtectedRoute>} />
+            <Route path="/student/drawing/:assignmentSubmissionId" element={<ProtectedRoute allowedRoles={['student']}>
+              <DrawingAssignmentPage />
             </ProtectedRoute>} />
 
             {/* Protected Instructor Routes */}

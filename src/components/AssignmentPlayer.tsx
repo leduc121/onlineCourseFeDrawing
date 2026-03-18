@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { assignmentsApi, uploadsApi } from '../api';
 import { FileText, Upload, CheckCircle, Clock, AlertTriangle, Star, Send, ExternalLink, PenTool } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface AssignmentDetail {
     id: string;
@@ -33,6 +34,7 @@ interface AssignmentPlayerProps {
 type ViewState = 'loading' | 'view' | 'submitting' | 'error';
 
 export function AssignmentPlayer({ assignmentId, lessonTitle, onClose, onComplete }: AssignmentPlayerProps) {
+    const navigate = useNavigate();
     const [state, setState] = useState<ViewState>('loading');
     const [assignment, setAssignment] = useState<AssignmentDetail | null>(null);
     const [submission, setSubmission] = useState<Submission | null>(null);
@@ -189,6 +191,12 @@ export function AssignmentPlayer({ assignmentId, lessonTitle, onClose, onComplet
                                         <a href={submission.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium bg-white px-3 py-1.5 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors">
                                             <ExternalLink size={14} /> View Submitted File
                                         </a>
+                                        <button
+                                            onClick={() => navigate(`/student/drawing/${submission.id}`)}
+                                            className="inline-flex items-center gap-1.5 text-sm text-[#8f3f10] hover:text-[#6f300c] font-medium bg-white px-3 py-1.5 rounded-lg border border-orange-200 hover:border-orange-300 transition-colors"
+                                        >
+                                            <PenTool size={14} /> Open Drawing Studio
+                                        </button>
                                     </div>
 
                                     {submission.studentNotes && (
