@@ -9,6 +9,7 @@ export interface Course {
   price: number;
   thumbnail: string;
   studentProfileId?: string;
+  itemType?: number;
 }
 interface CartContextType {
   items: Course[];
@@ -42,6 +43,8 @@ export function CartProvider({
           instructor: item.instructorName || 'Instructor',
           price: item.coursePrice,
           thumbnail: item.thumbnailUrl || 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80',
+          studentProfileId: item.studentProfileId,
+          itemType: item.itemType
         }));
         setItems(mapped);
       }
@@ -63,7 +66,8 @@ export function CartProvider({
       try {
         await cartApi.addItem({
           CourseId: course.id,
-          ItemType: 0 // Buy
+          ItemType: 0, // Buy
+          StudentProfileId: course.studentProfileId
         });
         await fetchCart(); // Refresh cart from server
       } catch (error: any) {

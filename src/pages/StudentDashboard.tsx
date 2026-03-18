@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Play, Star, Award, Clock, Heart, Zap, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { studentProfilesApi } from '../api';
+import { studentProfilesApi, paymentsApi } from '../api';
 
 export function StudentDashboard() {
     const { user } = useAuth();
@@ -24,10 +24,29 @@ export function StudentDashboard() {
             }
         };
 
-        if (user?.role === 'student') {
+        const verifyPayment = async (sessionId: string) => {
+            try {
+                setIsLoading(true);
+                await paymentsApi.verifySession(sessionId);
+                // Clean up the URL
+                navigate('/dashboard', { replace: true });
+                // Re-fetch courses to show the new one
+                await fetchCourses();
+            } catch (error) {
+                console.error("Payment verification failed:", error);
+                setIsLoading(false);
+            }
+        };
+
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('session_id');
+
+        if (sessionId) {
+            verifyPayment(sessionId);
+        } else if (user?.role === 'student') {
             fetchCourses();
         }
-    }, [user]);
+    }, [user, navigate]);
 
     return (
         <div className="min-h-screen bg-[#FFFBE6] p-6 lg:p-8 font-sans">
@@ -122,7 +141,7 @@ export function StudentDashboard() {
                                 key={course.id}
                                 whileHover={{ y: -8 }}
                                 className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl shadow-indigo-100/50 group cursor-pointer border-4 border-white hover:border-[#5D5FEF] transition-colors"
-                                onClick={() => navigate(`/course/${course.id}`)}
+                                onClick={() => navigate(`/course/${course.id}/learn`)}
                             >
                                 <div className="relative h-56 overflow-hidden">
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />

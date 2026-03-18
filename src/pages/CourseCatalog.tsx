@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { CourseCard, CourseProps } from '../components/CourseCard';
 import { coursesApi, categoriesApi } from '../api';
 
 export function CourseCatalog() {
+  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAge, setSelectedAge] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [courses, setCourses] = useState<CourseProps[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const preSelectedChildId = searchParams.get('childId') || undefined;
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -107,7 +110,7 @@ export function CourseCatalog() {
           <>
             {/* Results */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredCourses.map(course => <CourseCard key={course.id} course={course} />)}
+              {filteredCourses.map(course => <CourseCard key={course.id} course={course} preSelectedStudentId={preSelectedChildId} />)}
             </div>
 
             {filteredCourses.length === 0 && <div className="text-center py-20">

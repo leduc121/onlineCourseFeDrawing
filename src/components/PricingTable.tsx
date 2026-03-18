@@ -39,8 +39,8 @@ export function PricingTable() {
           <div className="mb-8">
             <h3 className="text-xl font-serif font-bold mb-2">Little Artist</h3>
             <div className="flex items-baseline gap-1 mb-4">
-              <span className="text-4xl font-serif">$9.99</span>
-              <span className="text-sm text-editorial-subtle">/month</span>
+              <span className="text-3xl font-serif">250.000 ₫</span>
+              <span className="text-sm text-editorial-subtle">/tháng</span>
             </div>
             <p className="text-sm text-editorial-subtle leading-relaxed">
               Perfect for beginners to start their creative journey.
@@ -77,8 +77,8 @@ export function PricingTable() {
             </span>
             <h3 className="text-xl font-serif font-bold mb-2">Creative Studio</h3>
             <div className="flex items-baseline gap-1 mb-4">
-              <span className="text-4xl font-serif">$19.99</span>
-              <span className="text-sm text-editorial-subtle">/month</span>
+              <span className="text-3xl font-serif">500.000 ₫</span>
+              <span className="text-sm text-editorial-subtle">/tháng</span>
             </div>
             <p className="text-sm text-editorial-subtle leading-relaxed">
               Unlock your full potential with unlimited learning.
@@ -111,8 +111,8 @@ export function PricingTable() {
           <div className="mb-8">
             <h3 className="text-xl font-serif font-bold mb-2">Masterpiece Pro</h3>
             <div className="flex items-baseline gap-1 mb-4">
-              <span className="text-4xl font-serif">$49.99</span>
-              <span className="text-sm text-editorial-subtle">/month</span>
+              <span className="text-3xl font-serif">1.250.000 ₫</span>
+              <span className="text-sm text-editorial-subtle">/tháng</span>
             </div>
             <p className="text-sm text-editorial-subtle leading-relaxed">
               For dedicated young artists who want professional guidance.

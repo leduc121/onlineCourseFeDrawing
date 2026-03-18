@@ -14,9 +14,11 @@ export interface CourseProps {
   category: string;
 }
 export function CourseCard({
-  course
+  course,
+  preSelectedStudentId
 }: {
   course: CourseProps;
+  preSelectedStudentId?: string;
 }) {
   return <div className="group bg-white border border-[#2d2d2d]/10 hover:border-[#2d2d2d] transition-all duration-300 flex flex-col h-full">
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
@@ -50,16 +52,14 @@ export function CourseCard({
         </p>
 
         <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-          <span className="text-2xl font-serif font-bold text-[#2d2d2d]">
-            ${course.price}
-          </span>
+            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(course.price)}
           <EnrollButton course={{
               id: course.id,
               title: course.title,
               instructor: course.instructor,
               price: course.price,
               thumbnail: course.image
-          }} variant="outline" size="sm" />
+          }} preSelectedStudentId={preSelectedStudentId} variant="outline" size="sm" />
         </div>
       </div>
     </div>;

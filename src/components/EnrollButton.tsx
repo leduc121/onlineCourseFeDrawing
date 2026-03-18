@@ -5,12 +5,12 @@ import { studentProfilesApi } from '../api';
 import { useAuth } from '../contexts/AuthContext';
 import { X } from 'lucide-react';
 
-export function EnrollButton({ course, variant = 'primary', className = '', size = 'md' }: { course: Course; variant?: 'primary' | 'secondary' | 'outline' | 'ghost'; className?: string; size?: 'sm' | 'md' | 'lg' }) {
+export function EnrollButton({ course, variant = 'primary', className = '', size = 'md', preSelectedStudentId }: { course: Course; variant?: 'primary' | 'secondary' | 'outline' | 'ghost'; className?: string; size?: 'sm' | 'md' | 'lg'; preSelectedStudentId?: string }) {
     const { user } = useAuth();
     const { addToCart } = useCart();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [students, setStudents] = useState<any[]>([]);
-    const [selectedStudent, setSelectedStudent] = useState<string>('');
+    const [selectedStudent, setSelectedStudent] = useState<string>(preSelectedStudentId || '');
     const [isLoading, setIsLoading] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
 
@@ -21,20 +21,36 @@ export function EnrollButton({ course, variant = 'primary', className = '', size
         }
 
         if (user.role === 'customer') {
-            setIsLoading(true);
-            setIsModalOpen(true);
-            try {
-                const res = await studentProfilesApi.getMyStudents();
-                if (res.data?.data) {
-                    setStudents(res.data.data);
-                    if (res.data.data.length > 0) {
-                        setSelectedStudent(res.data.data[0].id);
-                    }
+            // If child is already pre-selected, add directly without modal
+            if (preSelectedStudentId) {
+                setIsAdding(true);
+                try {
+                    await addToCart({
+                        ...course,
+                        studentProfileId: preSelectedStudentId
+                    });
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    setIsAdding(false);
                 }
-            } catch (err) {
-                console.error("Failed to fetch kids", err);
-            } finally {
-                setIsLoading(false);
+            } else {
+                // Show modal to select child
+                setIsLoading(true);
+                setIsModalOpen(true);
+                try {
+                    const res = await studentProfilesApi.getMyStudents();
+                    if (res.data?.data) {
+                        setStudents(res.data.data);
+                        if (res.data.data.length > 0) {
+                            setSelectedStudent(res.data.data[0].id);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch kids", err);
+                } finally {
+                    setIsLoading(false);
+                }
             }
         } else {
             // For other roles, just attempt to add to cart (though backend might block if not parent)

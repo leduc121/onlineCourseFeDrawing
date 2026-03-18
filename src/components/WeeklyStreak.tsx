@@ -1,118 +1,138 @@
 import React, { useState } from 'react';
-import { Flame, Info, Clock, X } from 'lucide-react';
+import { Flame, Clock, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/Button';
 
-export function WeeklyStreak() {
+interface WeeklyStreakProps {
+    studentName?: string;
+    currentStreak: number;
+    minutesGoal?: number;
+    minutesWatched?: number;
+    visitsCount?: number;
+    visitsGoal?: number;
+    showSchedule?: boolean;
+    onScheduleClick?: () => void;
+}
+
+export function WeeklyStreak({
+    studentName,
+    currentStreak = 0,
+    minutesGoal = 30,
+    minutesWatched = 0,
+    visitsCount = 0,
+    visitsGoal = 1,
+    showSchedule = true,
+    onScheduleClick
+}: WeeklyStreakProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Mock data
-    const currentStreak = 0;
-    const minutesWatched = 0;
-    const minutesGoal = 30;
-    const visitsCount = 1;
-    const visitsGoal = 1;
-    const currentWeek = "25 thg 1 - 31";
+    // Calculate progress for the ring (weighted: 50% for visits, 50% for minutes)
+    const minutesProgress = (Math.min(minutesWatched, minutesGoal) / minutesGoal);
+    const visitsProgress = (Math.min(visitsCount, visitsGoal) / visitsGoal);
+    const progressPercent = ((minutesProgress + visitsProgress) / 2) * 100;
 
-    // Calculate progress for the ring (simplified)
-    const progressPercent = ((Math.min(minutesWatched, minutesGoal) / minutesGoal) + (Math.min(visitsCount, visitsGoal) / visitsGoal)) / 2 * 100;
-
-    const circleCircumference = 2 * Math.PI * 24; // r=24
-    const strokeDashoffset = circleCircumference - (progressPercent / 100) * circleCircumference;
+    // Get current week string
+    const now = new Date();
+    const start = new Date(now.setDate(now.getDate() - now.getDay() + 1)); // Monday
+    const end = new Date(now.setDate(now.getDate() - now.getDay() + 7)); // Sunday
+    const weekStr = `${start.getDate()} thg ${start.getMonth() + 1} - ${end.getDate()}`;
 
     return (
-        <div className="space-y-6 mb-12">
+        <div className="space-y-6">
             {/* Main Streak Card */}
-            <div className="bg-white border border-[#2d2d2d]/10 p-6 rounded-lg shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex-1">
-                    <h3 className="text-xl font-serif font-bold text-[#2d2d2d] mb-2">
-                        Bắt đầu một chuỗi hàng tuần
+            <div className="bg-white border border-[#2d2d2d]/10 p-6 rounded-lg shadow-sm flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="flex-1 text-center sm:text-left">
+                    <h3 className="text-lg font-serif font-bold text-[#2d2d2d] mb-1">
+                        {studentName ? `Chuỗi học của ${studentName}` : 'Bắt đầu chuỗi học tập'}
                     </h3>
-                    <p className="text-gray-600">
-                        Đã xong một vòng rồi! Bây giờ, hãy xem (các) khóa học của bạn.
+                    <p className="text-sm text-gray-600">
+                        {progressPercent >= 100 
+                          ? 'Tuyệt vời! Bạn đã đạt mục tiêu tuần.' 
+                          : 'Duy trì thói quen học mỗi ngày nhé!'}
                     </p>
                 </div>
 
-                <div className="flex items-center gap-12">
+                <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12">
                     {/* Flame Icon & Streak Count */}
                     <div className="flex items-center gap-3">
                         <div className="relative">
-                            <Flame className={`w-8 h-8 ${currentStreak > 0 ? 'text-orange-500 fill-orange-500' : 'text-gray-300'}`} />
+                            <Flame className={`w-7 h-7 ${currentStreak > 0 ? 'text-orange-500 fill-orange-500' : 'text-gray-300'}`} />
                         </div>
                         <div className="text-left">
-                            <span className="block text-lg font-bold text-[#2d2d2d] leading-none">
+                            <span className="block text-base font-bold text-[#2d2d2d] leading-none">
                                 {currentStreak} tuần
                             </span>
-                            <span className="text-sm text-gray-500">Chuỗi hiện tại</span>
+                            <span className="text-[12px] text-gray-500">Chuỗi hiện tại</span>
                         </div>
                     </div>
 
                     {/* Progress Ring & Stats */}
                     <div className="flex items-center gap-4">
-                        <div className="relative w-16 h-16 shrink-0">
+                        <div className="relative w-14 h-14 shrink-0">
                             <svg className="w-full h-full transform -rotate-90">
                                 <circle
-                                    cx="32"
-                                    cy="32"
-                                    r="24"
+                                    cx="28"
+                                    cy="28"
+                                    r="22"
                                     stroke="#e5e7eb"
-                                    strokeWidth="6"
+                                    strokeWidth="5"
                                     fill="transparent"
                                 />
                                 <circle
-                                    cx="32"
-                                    cy="32"
-                                    r="24"
+                                    cx="28"
+                                    cy="28"
+                                    r="22"
                                     stroke="#10b981"
-                                    strokeWidth="6"
+                                    strokeWidth="5"
                                     fill="transparent"
-                                    strokeDasharray={circleCircumference}
-                                    strokeDashoffset={strokeDashoffset}
+                                    strokeDasharray={2 * Math.PI * 22}
+                                    strokeDashoffset={(2 * Math.PI * 22) - (progressPercent / 100) * (2 * Math.PI * 22)}
                                     className="transition-all duration-1000 ease-out"
                                 />
                             </svg>
                         </div>
 
-                        <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <span className={`w-2 h-2 rounded-full ${minutesWatched >= minutesGoal ? 'bg-[#ff8a80]' : 'bg-[#ff8a80]'}`}></span>
-                                <span className="font-medium text-[#2d2d2d]">{minutesWatched}/{minutesGoal} phút khóa học</span>
-                                <button onClick={() => setIsModalOpen(true)} className="text-gray-400 hover:text-[#2d2d2d] transition-colors ml-1">
-                                    <Info size={14} />
-                                </button>
+                        <div className="space-y-0.5">
+                            <div className="flex items-center gap-2 text-[13px] text-gray-600">
+                                <span className={`w-2 h-2 rounded-full ${minutesWatched >= minutesGoal ? 'bg-[#ff8a80]' : 'bg-gray-200'}`}></span>
+                                <span className="font-medium text-[#2d2d2d]">{minutesWatched}/{minutesGoal} phút học</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <span className={`w-2 h-2 rounded-full ${visitsCount >= visitsGoal ? 'bg-[#10b981]' : 'bg-[#10b981]'}`}></span>
+                            <div className="flex items-center gap-2 text-[13px] text-gray-600">
+                                <span className={`w-2 h-2 rounded-full ${visitsCount >= visitsGoal ? 'bg-[#10b981]' : 'bg-gray-200'}`}></span>
                                 <span className="font-medium text-[#2d2d2d]">{visitsCount}/{visitsGoal} lượt truy cập</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm text-gray-500 mt-1 pl-4">
-                                <span>{currentWeek}</span>
+                            <div className="text-[11px] text-gray-400 mt-0.5">
+                                {weekStr}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Schedule Card */}
-            <div className="bg-white border border-[#2d2d2d]/10 p-6 rounded-lg shadow-sm flex flex-col md:flex-row gap-6">
-                <div className="shrink-0 pt-1">
-                    <Clock className="w-6 h-6 text-[#2d2d2d]" />
-                </div>
-                <div className="flex-1">
-                    <h3 className="text-lg font-bold text-[#2d2d2d] mb-2">Lên lịch thời gian học</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed mb-4 max-w-4xl">
-                        Học một chút mỗi ngày sẽ giúp bạn tích lũy kiến thức. Nghiên cứu cho thấy rằng những học viên biến việc học thành thói quen sẽ có nhiều khả năng đạt được mục tiêu hơn. Hãy dành thời gian để học và nhận lời nhắc bằng cách sử dụng trình lên lịch học tập.
-                    </p>
-                    <div className="flex gap-4">
-                        <Button size="sm" variant="outline" className="border-purple-600 text-purple-600 hover:bg-purple-50 hover:text-purple-700 px-6 font-medium transition-colors">
-                            Bắt đầu
-                        </Button>
-                        <Button size="sm" variant="ghost" className="text-purple-600 hover:text-purple-700 hover:bg-transparent px-0 font-medium">
-                            Hủy bỏ
-                        </Button>
+            {/* Schedule Card - Conditional */}
+            {showSchedule && (
+                <div className="bg-white border border-[#2d2d2d]/10 p-6 rounded-lg shadow-sm flex flex-col md:flex-row gap-6">
+                    <div className="shrink-0 pt-1">
+                        <Clock className="w-6 h-6 text-[#2d2d2d]" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-lg font-bold text-[#2d2d2d] mb-2">Lên lịch thời gian học</h3>
+                        <p className="text-sm text-gray-600 leading-relaxed mb-4 max-w-4xl">
+                            Học một chút mỗi ngày sẽ giúp bạn tích lũy kiến thức. Nghiên cứu cho thấy rằng những học viên biến việc học thành thói quen sẽ có nhiều khả năng đạt được mục tiêu hơn. Hãy dành thời gian để học và nhận lời nhắc bằng cách sử dụng trình lên lịch học tập.
+                        </p>
+                        <div className="flex gap-4">
+                            <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={onScheduleClick}
+                                className="border-purple-600 text-purple-600 hover:bg-purple-50 hover:text-purple-700 px-6 font-medium transition-colors"
+                            >
+                                Bắt đầu
+                            </Button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* Info Modal */}
             <AnimatePresence>

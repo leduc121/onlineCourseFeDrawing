@@ -3,6 +3,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { Navigation } from './components/Navigation';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { Toaster } from 'react-hot-toast';
+import Chatbot from './components/Chatbot/Chatbot';
 // Pages
 import { LandingPage } from './pages/LandingPage';
 import { Login } from './pages/Login';
@@ -18,6 +20,17 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { AboutUs } from './pages/AboutUs';
 import { ManageCourse } from './pages/ManageCourse';
 import { Profile } from './pages/Profile';
+import { CoursePlay } from './pages/CoursePlay';
+import { PostList } from './pages/PostList';
+import { PostDetail } from './pages/PostDetail';
+import { ManagePost } from './pages/ManagePost';
+import { AdminPostReview } from './pages/AdminPostReview';
+import { Membership } from './pages/Membership';
+import { PaymentManagementPage } from './pages/PaymentManagementPage';
+import { SupportPage } from './pages/SupportPage';
+import { BundleCatalogPage } from './pages/BundleCatalogPage';
+import { AdminPanel } from './pages/AdminPanel';
+import { DrawingAssignmentPage } from './pages/DrawingAssignmentPage';
 
 export function App() {
   return <AuthProvider>
@@ -25,6 +38,8 @@ export function App() {
       <Router basename={import.meta.env.BASE_URL}>
         <div className="min-h-screen bg-[#faf8f5]">
           <Navigation />
+          <Toaster position="top-right" />
+          <Chatbot />
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
@@ -33,6 +48,9 @@ export function App() {
             <Route path="/about" element={<AboutUs />} />
             <Route path="/courses" element={<CourseCatalog />} />
             <Route path="/course/:id" element={<CourseDetail />} />
+            <Route path="/membership" element={<Membership />} />
+            <Route path="/posts" element={<PostList />} />
+            <Route path="/posts/:id" element={<PostDetail />} />
 
             {/* Protected Customer Routes */}
             <Route path="/checkout" element={<ProtectedRoute allowedRoles={['customer']}>
@@ -49,6 +67,15 @@ export function App() {
             <Route path="/student/dashboard" element={<ProtectedRoute allowedRoles={['student']}>
               <StudentDashboard />
             </ProtectedRoute>} />
+            <Route path="/course/:id/learn" element={<ProtectedRoute allowedRoles={['student']}>
+              <CoursePlay />
+            </ProtectedRoute>} />
+            <Route path="/student/support" element={<ProtectedRoute allowedRoles={['student']}>
+              <SupportPage />
+            </ProtectedRoute>} />
+            <Route path="/student/drawing/:assignmentSubmissionId" element={<ProtectedRoute allowedRoles={['student']}>
+              <DrawingAssignmentPage />
+            </ProtectedRoute>} />
 
             {/* Protected Instructor Routes */}
             <Route path="/instructor/dashboard" element={<ProtectedRoute allowedRoles={['instructor']}>
@@ -60,16 +87,32 @@ export function App() {
             <Route path="/instructor/edit-course/:id" element={<ProtectedRoute allowedRoles={['instructor']}>
               <ManageCourse />
             </ProtectedRoute>} />
+            <Route path="/instructor/posts" element={<ProtectedRoute allowedRoles={['instructor', 'staff']}>
+              <ManagePost />
+            </ProtectedRoute>} />
+            <Route path="/instructor/payments" element={<ProtectedRoute allowedRoles={['instructor']}>
+              <PaymentManagementPage />
+            </ProtectedRoute>} />
 
             {/* Protected Admin Routes */}
             <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}>
               <AdminDashboard />
+            </ProtectedRoute>} />
+            <Route path="/admin/posts" element={<ProtectedRoute allowedRoles={['admin']}>
+              <AdminPostReview />
+            </ProtectedRoute>} />
+            <Route path="/admin/panel" element={<ProtectedRoute allowedRoles={['admin']}>
+              <AdminPanel />
             </ProtectedRoute>} />
 
             <Route path="/staff/dashboard" element={<ProtectedRoute allowedRoles={['staff']}>
               <div className="p-12 text-center">
                 Staff Dashboard Placeholder
               </div>
+            </ProtectedRoute>} />
+
+            <Route path="/bundles" element={<ProtectedRoute allowedRoles={['customer', 'student']}>
+              <BundleCatalogPage />
             </ProtectedRoute>} />
 
             {/* Profile Page - common for all logged in users */}

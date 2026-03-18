@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Users, DollarSign, BookOpen, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { coursesApi } from '../api';
+import { coursesApi, instructorProfilesApi, withdrawalsApi } from '../api';
 
 export function InstructorDashboard() {
   const [courses, setCourses] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalRevenue: 0,
+    withdrawableAmount: 0,
     totalStudents: 0,
     activeCourses: 0,
     avgRating: 0
@@ -17,22 +18,46 @@ export function InstructorDashboard() {
   const fetchMyCourses = async () => {
     try {
       setIsLoading(true);
-      const res = await coursesApi.getMyCourses(1, 50);
-      if (res.data?.data) {
-        const fetchedCourses = res.data.data.items || [];
+      // Fetch Profile and Courses in parallel
+      const [profileRes, coursesRes, withdrawableRes] = await Promise.all([
+        instructorProfilesApi.getMyProfile().catch(() => null),
+        coursesApi.getMyCourses(1, 50),
+        withdrawalsApi.getWithdrawableAmount().catch(() => null)
+      ]);
+
+      let earnings = 0;
+      let withdrawable = 0;
+      let totalStudents = 0;
+      
+      if (profileRes?.data?.data) {
+        earnings = profileRes.data.data.totalEarnings || 0;
+        withdrawable = profileRes.data.data.withdrawableEarnings || 0;
+      }
+
+      if (withdrawableRes?.data?.data?.amount !== undefined) {
+        withdrawable = withdrawableRes.data.data.amount || 0;
+      }
+
+      if (coursesRes.data?.data) {
+        const fetchedCourses = coursesRes.data.data.items || [];
         setCourses(fetchedCourses);
 
-        // Dummy calculations since we might not have all these stats in course list
         const activeCount = fetchedCourses.filter((c: any) => c.status === 'Published').length;
+        // Calculate total students by summing enrollments from all courses
+        totalStudents = fetchedCourses.reduce((sum: number, course: any) => {
+          return sum + (course.enrollmentCount || 0);
+        }, 0);
+        
         setStats({
-          totalRevenue: 1240, // Mock
-          totalStudents: 156, // Mock 
+          totalRevenue: earnings,
+          withdrawableAmount: withdrawable,
+          totalStudents: totalStudents,
           activeCourses: activeCount,
-          avgRating: 4.8 // Mock
+          avgRating: 0.0
         });
       }
     } catch (error) {
-      console.error("Error fetching instructor courses:", error);
+      console.error("Error fetching instructor data:", error);
     } finally {
       setIsLoading(false);
     }
@@ -55,14 +80,14 @@ export function InstructorDashboard() {
   };
 
   const handlePublish = async (id: string) => {
-    if (confirm('Publish this course? It will be visible to all users.')) {
+    if (confirm('Are you sure you want to publish this course to the public catalog?')) {
       try {
         await coursesApi.publish(id);
         alert('Course published successfully!');
         fetchMyCourses();
       } catch (error: any) {
-        console.error("Error publishing course", error);
-        alert(error.response?.data?.message || "Failed to publish course.");
+        console.error('Failed to publish course', error);
+        alert(error.response?.data?.message || 'Failed to publish course.');
       }
     }
   };
@@ -78,28 +103,50 @@ export function InstructorDashboard() {
               Manage your courses and track your students' progress.
             </p>
           </div>
-          <Link to="/instructor/create-course">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" /> Create New Course
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => fetchMyCourses()}
+              disabled={isLoading}
+              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:bg-gray-400 text-sm font-medium"
+            >
+              {isLoading ? 'Refreshing...' : 'Refresh'}
+            </button>
+            <Link to="/instructor/create-course">
+              <Button>
+                <Plus className="w-4 h-4 mr-2" /> Create New Course
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-12">
           <div className="bg-white p-6 border border-[#2d2d2d]/10 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium text-gray-500 uppercase">
-                Total Revenue
+                Total Earnings
               </h3>
               <DollarSign className="w-5 h-5 text-[#87a878]" />
             </div>
             <p className="text-3xl font-serif font-bold text-[#2d2d2d]">
-              ${stats.totalRevenue.toLocaleString()}
+              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.totalRevenue)}
             </p>
             <p className="text-sm text-green-600 mt-2 flex items-center">
-              <TrendingUp className="w-3 h-3 mr-1" /> +12% this month
+              <TrendingUp className="w-3 h-3 mr-1" /> All time earnings after platform fee
             </p>
+          </div>
+
+          <div className="bg-blue-50 p-6 border border-blue-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium text-blue-600 uppercase">
+                Current Balance
+              </h3>
+              <DollarSign className="w-5 h-5 text-blue-600" />
+            </div>
+            <p className="text-3xl font-serif font-bold text-blue-700">
+              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.withdrawableAmount)}
+            </p>
+            <p className="text-sm text-blue-500 mt-2">Remaining after platform fee and withdrawal requests</p>
           </div>
 
           <div className="bg-white p-6 border border-[#2d2d2d]/10 shadow-sm">
@@ -194,6 +241,11 @@ export function InstructorDashboard() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {course.status === 'Approved' && (
+                        <button onClick={() => handlePublish(course.id)} className="text-green-600 hover:text-green-900 font-bold mr-4">
+                          Publish
+                        </button>
+                      )}
                       <Link to={`/course/${course.id}`} className="text-[#2d2d2d] hover:text-[#ff8a80] mr-4">
                         View
                       </Link>
