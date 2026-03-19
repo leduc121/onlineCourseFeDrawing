@@ -17,7 +17,6 @@ interface AuthContextType {
   isLoading: boolean;
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-import { authApi } from '../api';
 
 export function AuthProvider({
   children

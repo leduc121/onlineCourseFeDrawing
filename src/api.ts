@@ -223,6 +223,10 @@ export const quizzesApi = {
     submit: (id: string, answers: any[]) => api.post(`/Quizzes/${id}/submit`, answers),
     getMySubmissions: (quizId: string) => api.get(`/Quizzes/${quizId}/submissions`),
     getSubmissionDetail: (submissionId: string) => api.get(`/Quizzes/submissions/${submissionId}`),
+    importExcelPreview: (formData: FormData) => api.post('/Quizzes/import-excel-preview', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    downloadTemplate: () => api.get('/Quizzes/excel-template', { responseType: 'blob' })
 };
 
 export const couponsApi = {

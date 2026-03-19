@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Plus, Trash2, Save, ArrowLeft, GripVertical, HelpCircle, FileText, ChevronDown, ChevronUp, CheckCircle, Users } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, GripVertical, HelpCircle, FileText, CheckCircle, Users, Upload, Download } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { coursesApi, uploadsApi, categoriesApi } from '../api';
+import { coursesApi, uploadsApi, categoriesApi, quizzesApi } from '../api';
 import { AssignmentGrader } from '../components/AssignmentGrader';
+import axios from 'axios';
 
 // ─── Quiz/Assignment sub-types ──────────────────────────────────
 interface QuizAnswer {
@@ -71,17 +72,17 @@ export function ManageCourse() {
   const [sections, setSections] = useState<Section[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Track which lesson's quiz/assignment editor is open
-  // Track which lesson's quiz/assignment editor is open (can have multiple open)
-  const [expandedQuizzes, setExpandedQuizzes] = useState<string[]>([]); // array of "sIndex-lIndex"
-  const [expandedAssignments, setExpandedAssignments] = useState<string[]>([]);
-
   // Assignment grader modal
   const [graderAssignment, setGraderAssignment] = useState<{ id: string; title: string; maxScore: number } | null>(null);
+  const [quizModalOpen, setQuizModalOpen] = useState<{ sIndex: number, lIndex: number } | null>(null);
+  const [assignmentModalOpen, setAssignmentModalOpen] = useState<{ sIndex: number, lIndex: number } | null>(null);
+
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   const handleFileUpload = async (file: File, folder: string): Promise<string | null> => {
     try {
       setIsUploading(true);
+      setUploadProgress(0);
       const res = await uploadsApi.getPresignedUrl({
           fileName: file.name,
           contentType: file.type || 'application/octet-stream',
@@ -89,11 +90,15 @@ export function ManageCourse() {
       });
       const { uploadUrl } = res.data.data;
       
-      await fetch(uploadUrl, {
-          method: 'PUT',
-          body: file,
+      await axios.put(uploadUrl, file, {
           headers: {
               'Content-Type': file.type || 'application/octet-stream'
+          },
+          onUploadProgress: (progressEvent) => {
+              if (progressEvent.total) {
+                  const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                  setUploadProgress(percentCompleted);
+              }
           }
       });
       
@@ -101,10 +106,71 @@ export function ManageCourse() {
       return s3Url;
     } catch (err) {
       console.error("Upload failed", err);
-      alert("Failed to upload file. Check S3 credentials.");
+      alert("Failed to upload file. Check S3 credentials or Network rules.");
       return null;
     } finally {
       setIsUploading(false);
+      setUploadProgress(null);
+    }
+  };
+
+  const handleImportExcel = async (sIndex: number, lIndex: number, file: File) => {
+    try {
+      if (!file) return;
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const res = await quizzesApi.importExcelPreview(formData);
+      const importedQuestions = res.data;
+      
+      const mappedQuestions = importedQuestions.map((q: any) => ({
+        content: q.content,
+        points: q.points,
+        answers: q.answers.map((a: any) => ({
+          content: a.content,
+          isCorrect: a.isCorrect
+        }))
+      }));
+      
+      const newSections = [...sections];
+      const quiz = newSections[sIndex].lessons[lIndex].quiz!;
+      quiz.questions = [...quiz.questions, ...mappedQuestions];
+      
+      const totalCount = quiz.questions.length;
+      if (totalCount > 0) {
+          // Calculate points so they sum to 10, but ensure minimum of 1 point
+          let basePoints = Math.floor(10 / totalCount);
+          if (basePoints < 1) basePoints = 1; 
+          
+          const remainder = (totalCount <= 10) ? (10 % totalCount) : 0;
+          quiz.questions.forEach((q, idx) => {
+              q.points = basePoints + (idx === 0 && totalCount <= 10 ? remainder : 0);
+          });
+      }
+      
+      setSections(newSections);
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to import Excel. Please check the file format.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await quizzesApi.downloadTemplate();
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'QuizTemplate.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to download template.");
     }
   };
 
@@ -176,19 +242,6 @@ export function ManageCourse() {
                  } : null,
              })) : []
           })));
-
-          // Auto-expand all existing quizzes and assignments
-          const quizKeys: string[] = [];
-          const assignmentKeys: string[] = [];
-          c.sections.forEach((s: any, sIdx: number) => {
-            s.lessons?.forEach((l: any, lIdx: number) => {
-              const key = `${sIdx}-${lIdx}`;
-              if (l.quiz) quizKeys.push(key);
-              if (l.assignment) assignmentKeys.push(key);
-            });
-          });
-          setExpandedQuizzes(quizKeys);
-          setExpandedAssignments(assignmentKeys);
         }
       }
     } catch (err) {
@@ -244,10 +297,6 @@ export function ManageCourse() {
   };
 
   // ── Quiz handlers ─────────────────────────────────────────────
-  const toggleQuizEditor = (key: string) => {
-    setExpandedQuizzes(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
-  };
-
   const addQuizToLesson = (sIndex: number, lIndex: number) => {
     const newSections = [...sections];
     newSections[sIndex].lessons[lIndex].quiz = {
@@ -264,9 +313,7 @@ export function ManageCourse() {
       }]
     };
     setSections(newSections);
-    if (!expandedQuizzes.includes(`${sIndex}-${lIndex}`)) {
-      setExpandedQuizzes([...expandedQuizzes, `${sIndex}-${lIndex}`]);
-    }
+    setQuizModalOpen({ sIndex, lIndex });
   };
 
   const removeQuizFromLesson = (sIndex: number, lIndex: number) => {
@@ -274,7 +321,9 @@ export function ManageCourse() {
     const newSections = [...sections];
     newSections[sIndex].lessons[lIndex].quiz = null;
     setSections(newSections);
-    setExpandedQuizzes(prev => prev.filter(k => k !== `${sIndex}-${lIndex}`));
+    if (quizModalOpen?.sIndex === sIndex && quizModalOpen?.lIndex === lIndex) {
+        setQuizModalOpen(null);
+    }
   };
 
   const updateQuizField = (sIndex: number, lIndex: number, field: string, value: any) => {
@@ -337,10 +386,6 @@ export function ManageCourse() {
   };
 
   // ── Assignment handlers ───────────────────────────────────────
-  const toggleAssignmentEditor = (key: string) => {
-    setExpandedAssignments(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
-  };
-
   const addAssignmentToLesson = (sIndex: number, lIndex: number) => {
     const newSections = [...sections];
     newSections[sIndex].lessons[lIndex].assignment = {
@@ -349,9 +394,7 @@ export function ManageCourse() {
       maxScore: 100,
     };
     setSections(newSections);
-    if (!expandedAssignments.includes(`${sIndex}-${lIndex}`)) {
-      setExpandedAssignments([...expandedAssignments, `${sIndex}-${lIndex}`]);
-    }
+    setAssignmentModalOpen({ sIndex, lIndex });
   };
 
   const removeAssignmentFromLesson = (sIndex: number, lIndex: number) => {
@@ -359,7 +402,9 @@ export function ManageCourse() {
     const newSections = [...sections];
     newSections[sIndex].lessons[lIndex].assignment = null;
     setSections(newSections);
-    setExpandedAssignments(prev => prev.filter(k => k !== `${sIndex}-${lIndex}`));
+    if (assignmentModalOpen?.sIndex === sIndex && assignmentModalOpen?.lIndex === lIndex) {
+      setAssignmentModalOpen(null);
+    }
   };
 
   const updateAssignmentField = (sIndex: number, lIndex: number, field: string, value: any) => {
@@ -561,9 +606,10 @@ export function ManageCourse() {
 
                     <div>
                       <label className="block text-sm text-[#2d2d2d] font-bold mb-2 uppercase tracking-wide">
-                          Course Thumbnail {isUploading && <span className="text-xs text-indigo-500 font-normal ml-2">(Uploading...)</span>}
+                          Course Thumbnail {isUploading && uploadProgress !== null && <span className="text-xs text-indigo-500 font-normal ml-2">(Uploading... {uploadProgress}%)</span>}
+                          {isUploading && uploadProgress === null && <span className="text-xs text-indigo-500 font-normal ml-2">(Processing...)</span>}
                       </label>
-                      <input 
+                      <input  
                          type="file" 
                          accept="image/*"
                          className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
@@ -644,9 +690,6 @@ export function ManageCourse() {
 
                                  <div className="p-4 space-y-3">
                                      {section.lessons.map((lesson, lIndex) => {
-                                       const lessonKey = `${sIndex}-${lIndex}`;
-                                       const isQuizOpen = expandedQuizzes.includes(lessonKey);
-                                       const isAssignmentOpen = expandedAssignments.includes(lessonKey);
                                        return (
                                          <div key={lIndex} className="bg-white border border-gray-200 p-3 rounded-md shadow-sm ml-6 flex flex-col gap-3">
                                             <div className="flex items-center justify-between">
@@ -690,6 +733,7 @@ export function ManageCourse() {
                                                       disabled={isUploading}
                                                    />
                                                    {lesson.videoUrl && <p className="text-[10px] text-green-600 truncate mt-1" title={lesson.videoUrl}>✓ Video ready</p>}
+                                                   {isUploading && uploadProgress !== null && <p className="text-[10px] text-indigo-500 font-medium">⏳ Uploading... {uploadProgress}%</p>}
                                                 </div>
                                                 <input 
                                                     className="border border-gray-200 rounded px-2 py-1.5 text-xs w-full focus:outline-indigo-500"
@@ -709,152 +753,30 @@ export function ManageCourse() {
                                                 </label>
                                             </div>
 
-                                            {/* ── Add Quiz / Assignment buttons ── */}
-                                            <div className="flex gap-2 border-t border-gray-100 pt-2">
-                                              {!lesson.quiz ? (
-                                                <button onClick={() => addQuizToLesson(sIndex, lIndex)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 px-2 py-1 rounded hover:bg-indigo-50 transition-colors">
-                                                  <HelpCircle className="w-3 h-3" /> Add Quiz
-                                                </button>
-                                              ) : (
-                                                <button onClick={() => toggleQuizEditor(lessonKey)} className="text-xs font-bold text-indigo-600 flex items-center gap-1 px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 transition-colors">
-                                                  <HelpCircle className="w-3 h-3" /> 
-                                                  {isQuizOpen ? 'Hide' : 'Edit'} Quiz ({lesson.quiz.questions.length}Q)
-                                                  {isQuizOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                                </button>
-                                              )}
-                                              {!lesson.assignment ? (
-                                                <button onClick={() => addAssignmentToLesson(sIndex, lIndex)} className="text-xs font-bold text-orange-600 hover:text-orange-800 flex items-center gap-1 px-2 py-1 rounded hover:bg-orange-50 transition-colors">
-                                                  <FileText className="w-3 h-3" /> Add Assignment
-                                                </button>
-                                              ) : (
-                                                <button onClick={() => toggleAssignmentEditor(lessonKey)} className="text-xs font-bold text-orange-600 flex items-center gap-1 px-2 py-1 rounded bg-orange-50 hover:bg-orange-100 transition-colors">
-                                                  <FileText className="w-3 h-3" />
-                                                  {isAssignmentOpen ? 'Hide' : 'Edit'} Assignment
-                                                  {isAssignmentOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                                </button>
-                                              )}
-                                            </div>
-
-                                            {/* ── QUIZ EDITOR ── */}
-                                            {isQuizOpen && lesson.quiz && (
-                                              <div className="border-2 border-indigo-200 rounded-lg p-4 bg-indigo-50/30 space-y-4">
-                                                <div className="flex items-center justify-between">
-                                                  <h4 className="font-bold text-sm text-indigo-700 flex items-center gap-2">
-                                                    <HelpCircle className="w-4 h-4" /> Quiz Editor
-                                                  </h4>
-                                                  <button onClick={() => removeQuizFromLesson(sIndex, lIndex)} className="text-xs text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded hover:bg-red-50 transition-colors flex items-center gap-1">
-                                                    <Trash2 className="w-3 h-3" /> Remove Quiz
+                                              {/* ── Add Quiz / Assignment buttons ── */}
+                                              <div className="flex gap-2 border-t border-gray-100 pt-2">
+                                                {!lesson.quiz ? (
+                                                  <button onClick={() => addQuizToLesson(sIndex, lIndex)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 px-2 py-1 rounded hover:bg-indigo-50 transition-colors">
+                                                    <HelpCircle className="w-3 h-3" /> Add Quiz
                                                   </button>
-                                                </div>
-
-                                                {/* Quiz settings */}
-                                                <div className="grid grid-cols-3 gap-3">
-                                                  <div>
-                                                    <label className="text-[10px] font-bold text-gray-500 uppercase">Title</label>
-                                                    <input className="w-full border border-indigo-200 rounded px-2 py-1.5 text-xs focus:outline-indigo-500 bg-white" value={lesson.quiz.title} onChange={e => updateQuizField(sIndex, lIndex, 'title', e.target.value)} />
-                                                  </div>
-                                                  <div>
-                                                    <label className="text-[10px] font-bold text-gray-500 uppercase">Pass Score (%)</label>
-                                                    <input className="w-full border border-indigo-200 rounded px-2 py-1.5 text-xs focus:outline-indigo-500 bg-white" type="number" min={0} max={100} value={lesson.quiz.passingScore} onChange={e => updateQuizField(sIndex, lIndex, 'passingScore', Number(e.target.value))} />
-                                                  </div>
-                                                  <div>
-                                                    <label className="text-[10px] font-bold text-gray-500 uppercase">Time (min)</label>
-                                                    <input className="w-full border border-indigo-200 rounded px-2 py-1.5 text-xs focus:outline-indigo-500 bg-white" type="number" min={1} value={lesson.quiz.timeLimitMinutes} onChange={e => updateQuizField(sIndex, lIndex, 'timeLimitMinutes', Number(e.target.value))} />
-                                                  </div>
-                                                </div>
-
-                                                {/* Questions */}
-                                                <div className="space-y-3">
-                                                  {lesson.quiz.questions.map((question, qIndex) => (
-                                                    <div key={qIndex} className="bg-white border border-indigo-200 rounded-lg p-3 space-y-2">
-                                                      <div className="flex items-start gap-2">
-                                                        <span className="shrink-0 w-6 h-6 bg-indigo-100 text-indigo-600 rounded flex items-center justify-center text-xs font-bold mt-0.5">Q{qIndex + 1}</span>
-                                                        <input className="flex-1 border-b border-gray-200 focus:border-indigo-500 outline-none text-sm py-1 font-medium" placeholder="Question text..." value={question.content} onChange={e => updateQuestion(sIndex, lIndex, qIndex, 'content', e.target.value)} />
-                                                        <input className="w-16 border border-gray-200 rounded px-2 py-1 text-xs text-center focus:outline-indigo-500" type="number" min={1} value={question.points} onChange={e => updateQuestion(sIndex, lIndex, qIndex, 'points', Number(e.target.value))} title="Points" />
-                                                        <button onClick={() => removeQuestion(sIndex, lIndex, qIndex)} className="text-red-400 hover:text-red-600 p-1" title="Remove question">
-                                                          <Trash2 className="w-3 h-3" />
-                                                        </button>
-                                                      </div>
-
-                                                      {/* Answers */}
-                                                      <div className="ml-8 space-y-1.5">
-                                                        {question.answers.map((answer, aIndex) => (
-                                                          <div key={aIndex} className="flex items-center gap-2">
-                                                            <button onClick={() => setCorrectAnswer(sIndex, lIndex, qIndex, aIndex)} className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${answer.isCorrect ? 'border-green-500 bg-green-500' : 'border-gray-300 hover:border-green-400'}`} title={answer.isCorrect ? 'Correct answer' : 'Set as correct'}>
-                                                              {answer.isCorrect && <CheckCircle className="w-3 h-3 text-white" />}
-                                                            </button>
-                                                            <input className={`flex-1 border rounded px-2 py-1 text-xs focus:outline-indigo-500 ${answer.isCorrect ? 'border-green-300 bg-green-50' : 'border-gray-200'}`} placeholder={`Answer ${String.fromCharCode(65 + aIndex)}...`} value={answer.content} onChange={e => updateAnswer(sIndex, lIndex, qIndex, aIndex, 'content', e.target.value)} />
-                                                            {question.answers.length > 2 && (
-                                                              <button onClick={() => removeAnswer(sIndex, lIndex, qIndex, aIndex)} className="text-red-400 hover:text-red-600">
-                                                                <Trash2 className="w-3 h-3" />
-                                                              </button>
-                                                            )}
-                                                          </div>
-                                                        ))}
-                                                        <button onClick={() => addAnswer(sIndex, lIndex, qIndex)} className="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1 ml-7 mt-1">
-                                                          <Plus className="w-3 h-3" /> Add Answer
-                                                        </button>
-                                                      </div>
-                                                    </div>
-                                                  ))}
-                                                </div>
-
-                                                <button onClick={() => addQuestion(sIndex, lIndex)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 px-3 py-1.5 border border-dashed border-indigo-300 rounded-lg hover:bg-indigo-50 transition-colors w-full justify-center">
-                                                  <Plus className="w-3 h-3" /> Add Question
-                                                </button>
-                                              </div>
-                                            )}
-
-                                            {/* ── ASSIGNMENT EDITOR ── */}
-                                            {isAssignmentOpen && lesson.assignment && (
-                                              <div className="border-2 border-orange-200 rounded-lg p-4 bg-orange-50/30 space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                  <h4 className="font-bold text-sm text-orange-700 flex items-center gap-2">
-                                                    <FileText className="w-4 h-4" /> Assignment Editor
-                                                  </h4>
-                                                  <button onClick={() => removeAssignmentFromLesson(sIndex, lIndex)} className="text-xs text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded hover:bg-red-50 transition-colors flex items-center gap-1">
-                                                    <Trash2 className="w-3 h-3" /> Remove
+                                                ) : (
+                                                  <button onClick={() => setQuizModalOpen({ sIndex, lIndex })} className="text-xs font-bold text-indigo-600 flex items-center gap-1 px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                                                    <HelpCircle className="w-3 h-3" /> 
+                                                    Edit Quiz ({lesson.quiz.questions.length}Q)
                                                   </button>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                  <div>
-                                                    <label className="text-[10px] font-bold text-gray-500 uppercase">Title</label>
-                                                    <input className="w-full border border-orange-200 rounded px-2 py-1.5 text-xs focus:outline-orange-500 bg-white" value={lesson.assignment.title} onChange={e => updateAssignmentField(sIndex, lIndex, 'title', e.target.value)} />
-                                                  </div>
-                                                  <div>
-                                                    <label className="text-[10px] font-bold text-gray-500 uppercase">Max Score</label>
-                                                    <input className="w-full border border-orange-200 rounded px-2 py-1.5 text-xs focus:outline-orange-500 bg-white" type="number" min={1} value={lesson.assignment.maxScore} onChange={e => updateAssignmentField(sIndex, lIndex, 'maxScore', Number(e.target.value))} />
-                                                  </div>
-                                                </div>
-                                                <div>
-                                                  <label className="text-[10px] font-bold text-gray-500 uppercase">Instructions</label>
-                                                  <textarea className="w-full border border-orange-200 rounded px-2 py-2 text-xs focus:outline-orange-500 bg-white" rows={3} value={lesson.assignment.instructions} onChange={e => updateAssignmentField(sIndex, lIndex, 'instructions', e.target.value)} placeholder="Describe what students should do..." />
-                                                </div>
-                                                {/* View Submissions button (only if assignment was already saved to BE - lesson has an id) */}
-                                                {isEditMode && lesson.id && (
-                                                  <button
-                                                    onClick={() => {
-                                                      // We need the assignment's BE id. After saving, the assignment should have an id in the lesson response.
-                                                      // For now we use lesson.assignmentId if available, or we need to use the assignment endpoint.
-                                                      // The assignment object from BE response has an `id` field.
-                                                      const asnId = (lesson as any).assignmentId || (lesson.assignment as any)?.id;
-                                                      if (asnId) {
-                                                        setGraderAssignment({
-                                                          id: asnId,
-                                                          title: lesson.assignment!.title,
-                                                          maxScore: lesson.assignment!.maxScore,
-                                                        });
-                                                      } else {
-                                                        alert('Please save the curriculum first to view submissions.');
-                                                      }
-                                                    }}
-                                                    className="text-xs font-bold text-orange-600 hover:text-orange-800 flex items-center gap-1 px-3 py-1.5 border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors w-full justify-center"
-                                                  >
-                                                    <Users className="w-3 h-3" /> View Student Submissions
+                                                )}
+                                                {!lesson.assignment ? (
+                                                  <button onClick={() => addAssignmentToLesson(sIndex, lIndex)} className="text-xs font-bold text-orange-600 hover:text-orange-800 flex items-center gap-1 px-2 py-1 rounded hover:bg-orange-50 transition-colors">
+                                                    <FileText className="w-3 h-3" /> Add Assignment
+                                                  </button>
+                                                ) : (
+                                                  <button onClick={() => setAssignmentModalOpen({ sIndex, lIndex })} className="text-xs font-bold text-orange-600 flex items-center gap-1 px-2 py-1 rounded bg-orange-50 hover:bg-orange-100 transition-colors">
+                                                    <FileText className="w-3 h-3" />
+                                                    Edit Assignment
                                                   </button>
                                                 )}
                                               </div>
-                                            )}
+
                                          </div>
                                        );
                                      })}
@@ -881,6 +803,194 @@ export function ManageCourse() {
           maxScore={graderAssignment.maxScore}
           onClose={() => setGraderAssignment(null)}
         />
+      )}
+
+      {/* Assignment Modal */}
+      {assignmentModalOpen !== null && (
+        function () {
+          const { sIndex, lIndex } = assignmentModalOpen;
+          const lesson = sections[sIndex]?.lessons?.[lIndex];
+          if (!lesson || !lesson.assignment) return null;
+
+          return (
+            <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm p-4'>
+              <div className='w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden rounded-xl border-2 border-orange-200 bg-white shadow-2xl'>
+                <div className='flex flex-col gap-3 border-b border-orange-100 bg-white px-6 py-4 md:flex-row md:items-center md:justify-between shrink-0'>
+                  <h4 className='font-bold text-xl text-orange-700 flex items-center gap-2'>
+                    <FileText className='w-6 h-6' /> Assignment Editor - {lesson.title}
+                  </h4>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    <button
+                      onClick={() => removeAssignmentFromLesson(sIndex, lIndex)}
+                      className='text-xs text-red-500 hover:text-red-700 font-bold px-3 py-1.5 rounded bg-red-50 hover:bg-red-100 transition-colors flex items-center gap-1'
+                    >
+                      <Trash2 className='w-3 h-3' /> Remove Assignment
+                    </button>
+                    <button
+                      onClick={() => setAssignmentModalOpen(null)}
+                      className='text-xs font-bold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full transition-colors'
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+
+                <div className='flex-1 overflow-y-auto px-6 py-6'>
+                  <div className='space-y-4'>
+                    <div className='grid grid-cols-1 gap-4 rounded-xl border border-orange-100 bg-orange-50/60 p-4 md:grid-cols-2'>
+                      <div>
+                        <label className='mb-1 block text-xs font-bold uppercase text-gray-500'>Title</label>
+                        <input
+                          className='w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500'
+                          value={lesson.assignment.title}
+                          onChange={e => updateAssignmentField(sIndex, lIndex, 'title', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className='mb-1 block text-xs font-bold uppercase text-gray-500'>Max Score</label>
+                        <input
+                          className='w-full rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500'
+                          type='number'
+                          min={1}
+                          value={lesson.assignment.maxScore}
+                          onChange={e => updateAssignmentField(sIndex, lIndex, 'maxScore', Number(e.target.value))}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className='mb-1 block text-xs font-bold uppercase text-gray-500'>Instructions</label>
+                      <textarea
+                        className='min-h-[220px] w-full rounded-xl border border-orange-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500'
+                        value={lesson.assignment.instructions}
+                        onChange={e => updateAssignmentField(sIndex, lIndex, 'instructions', e.target.value)}
+                        placeholder='Describe what students should do...'
+                      />
+                    </div>
+
+                    {isEditMode && lesson.id && (
+                      <button
+                        onClick={() => {
+                          const asnId = (lesson as any).assignmentId || (lesson.assignment as any)?.id;
+                          if (asnId) {
+                            setGraderAssignment({
+                              id: asnId,
+                              title: lesson.assignment!.title,
+                              maxScore: lesson.assignment!.maxScore,
+                            });
+                          } else {
+                            alert('Please save the curriculum first to view submissions.');
+                          }
+                        }}
+                        className='flex w-full items-center justify-center gap-2 rounded-lg border border-orange-300 px-4 py-2 text-sm font-bold text-orange-600 transition-colors hover:bg-orange-50 hover:text-orange-800'
+                      >
+                        <Users className='h-4 w-4' /> View Student Submissions
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }()
+      )}
+
+      {/* Quiz Modal */}
+      {quizModalOpen !== null && (
+        function () {
+          const { sIndex, lIndex } = quizModalOpen;
+          const lesson = sections[sIndex]?.lessons?.[lIndex];
+          if (!lesson || !lesson.quiz) return null;
+
+          return (
+            <div className='fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm p-4'>
+              <div className='w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden rounded-xl border-2 border-indigo-200 bg-white shadow-2xl'>
+                <div className='flex flex-col gap-3 border-b border-indigo-100 bg-white px-6 py-4 md:flex-row md:items-center md:justify-between shrink-0'>
+                  <h4 className='flex items-center gap-2 text-xl font-bold text-indigo-700'>
+                    <HelpCircle className='w-6 h-6' /> Quiz Editor - {lesson.title}
+                  </h4>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    <button
+                      onClick={() => removeQuizFromLesson(sIndex, lIndex)}
+                      className='flex items-center gap-1 rounded bg-red-50 px-3 py-1.5 text-xs font-bold text-red-500 transition-colors hover:bg-red-100 hover:text-red-700'
+                    >
+                      <Trash2 className='w-3 h-3' /> Remove Quiz
+                    </button>
+                    <button
+                      onClick={() => setQuizModalOpen(null)}
+                      className='rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-700'
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+
+                <div className='flex-1 overflow-y-auto px-6 py-6'>
+                  <div className='mb-6 grid grid-cols-1 gap-6 rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 md:grid-cols-3'>
+                    <div>
+                      <label className='mb-1 block text-xs font-bold uppercase text-gray-500'>Title</label>
+                      <input className='w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500' value={lesson.quiz.title} onChange={e => updateQuizField(sIndex, lIndex, 'title', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className='mb-1 block text-xs font-bold uppercase text-gray-500'>Pass Score (%)</label>
+                      <input className='w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500' type='number' min={0} max={100} value={lesson.quiz.passingScore} onChange={e => updateQuizField(sIndex, lIndex, 'passingScore', Number(e.target.value))} />
+                    </div>
+                    <div>
+                      <label className='mb-1 block text-xs font-bold uppercase text-gray-500'>Time (min)</label>
+                      <input className='w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500' type='number' min={1} value={lesson.quiz.timeLimitMinutes} onChange={e => updateQuizField(sIndex, lIndex, 'timeLimitMinutes', Number(e.target.value))} />
+                    </div>
+                  </div>
+
+                  <div className='mb-6 space-y-4'>
+                    {lesson.quiz.questions.map((question, qIndex) => (
+                      <div key={qIndex} className='rounded-xl border border-indigo-200 bg-white p-4 shadow-sm transition-colors hover:border-indigo-300'>
+                        <div className='mb-3 flex items-start gap-3'>
+                          <span className='mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700'>Q{qIndex + 1}</span>
+                          <input className='flex-1 border-b-2 border-gray-100 bg-transparent py-2 text-base font-medium outline-none focus:border-indigo-500' placeholder='Question text...' value={question.content} onChange={e => updateQuestion(sIndex, lIndex, qIndex, 'content', e.target.value)} />
+                          <button onClick={() => removeQuestion(sIndex, lIndex, qIndex)} className='mt-1 rounded-full p-2 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600' title='Remove question'>
+                            <Trash2 className='w-4 h-4' />
+                          </button>
+                        </div>
+
+                        <div className='ml-11 space-y-2'>
+                          {question.answers.map((answer, aIndex) => (
+                            <div key={aIndex} className='flex items-center gap-3'>
+                              <button onClick={() => setCorrectAnswer(sIndex, lIndex, qIndex, aIndex)} className={`h-6 w-6 shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${answer.isCorrect ? 'border-green-500 bg-green-500 shadow-sm' : 'border-gray-300 hover:border-green-400'}`} title={answer.isCorrect ? 'Correct answer' : 'Set as correct'}>
+                                {answer.isCorrect && <CheckCircle className='w-4 h-4 text-white' />}
+                              </button>
+                              <input className={`flex-1 rounded-lg border-2 px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500 ${answer.isCorrect ? 'border-green-300 bg-green-50 font-medium' : 'border-gray-100 hover:border-gray-200'}`} placeholder={`Answer ${String.fromCharCode(65 + aIndex)}...`} value={answer.content} onChange={e => updateAnswer(sIndex, lIndex, qIndex, aIndex, 'content', e.target.value)} />
+                              {question.answers.length > 2 && (
+                                <button onClick={() => removeAnswer(sIndex, lIndex, qIndex, aIndex)} className='rounded p-1.5 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600'>
+                                  <Trash2 className='w-4 h-4' />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button onClick={() => addAnswer(sIndex, lIndex, qIndex)} className='mt-3 flex items-center gap-1.5 py-1 text-[11px] font-bold uppercase tracking-wider text-indigo-500 transition-colors hover:text-indigo-700'>
+                            <Plus className='w-3 h-3' /> Add Option
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className='flex flex-col gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 md:flex-row'>
+                    <button onClick={() => addQuestion(sIndex, lIndex)} className='flex flex-1 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-100 px-4 py-2 text-sm font-bold text-indigo-600 shadow-sm transition-colors hover:bg-indigo-200 hover:text-indigo-800'>
+                      <Plus className='w-4 h-4' /> Add Next Question
+                    </button>
+                    <label className='flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-green-200 bg-green-100 px-4 py-2 text-sm font-bold text-green-700 shadow-sm transition-colors hover:bg-green-200'>
+                      <Upload className='w-4 h-4' /> Import Excel
+                      <input type='file' accept='.xlsx' onChange={(e) => { if (e.target.files?.[0]) { handleImportExcel(sIndex, lIndex, e.target.files[0]); e.target.value = ''; } }} hidden />
+                    </label>
+                    <button onClick={handleDownloadTemplate} className='flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900'>
+                      <Download className='w-4 h-4' /> Download Template
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }()
       )}
     </div>
   );
