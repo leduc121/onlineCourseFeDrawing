@@ -4,10 +4,10 @@ import { useAuth, UserRole } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
+import { authApi } from '../api';
+
 export function Register() {
-  const {
-    login
-  } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -17,6 +17,7 @@ export function Register() {
     role: 'customer' as UserRole
   });
   const [isLoading, setIsLoading] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
@@ -24,17 +25,36 @@ export function Register() {
       return;
     }
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      login(formData.email, formData.role);
-      setIsLoading(false);
-      if (formData.role === 'instructor') {
-        navigate('/instructor/dashboard');
+
+    try {
+      const roleEnum = formData.role === 'instructor' ? 1 : 3; // 1 = Instructor, 3 = Parent
+      const registerData = {
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.name,
+        role: roleEnum
+      };
+
+      await authApi.register(registerData);
+      
+      alert("Registration successful. Proceeding to login...");
+      
+      // Auto login after registration
+      const role = await login(formData.email, formData.password);
+      
+      if (role === 'instructor') {
+         navigate('/instructor/dashboard');
       } else {
-        navigate('/dashboard');
+         navigate('/dashboard'); // customer/parent dashboard
       }
-    }, 1000);
+    } catch (error: any) {
+      console.error("Registration failed:", error);
+      alert(error.response?.data?.message || "Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
   return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center px-4 py-12">
     <div className="max-w-md w-full space-y-8">
       <div className="text-center">

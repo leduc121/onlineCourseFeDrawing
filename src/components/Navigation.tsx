@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { ShoppingBag, User, LogOut, Menu, X } from 'lucide-react';
 import { Button } from './ui/Button';
+import { NotificationPopover } from './NotificationPopover';
 
 export function Navigation() {
   const { user, logout } = useAuth();
@@ -60,6 +61,9 @@ export function Navigation() {
                 <Link to="/about" className="text-[#2d2d2d] hover:text-[#ff8a80] font-medium transition-colors">
                   About
                 </Link>
+                <Link to="/posts" className="text-[#2d2d2d] hover:text-[#ff8a80] font-medium transition-colors">
+                  Posts
+                </Link>
               </>
             )}
 
@@ -79,9 +83,32 @@ export function Navigation() {
               {/* Auth Section */}
               {user ? (
                 <div className="flex items-center space-x-4">
-                  <Link to={getDashboardLink()} className="flex items-center space-x-2 text-[#2d2d2d] hover:text-[#ff8a80]">
-                    <User className="w-5 h-5" />
-                    <span className="font-medium">{user.name}</span>
+                    <Link to={getDashboardLink()} className="flex items-center space-x-2 text-[#2d2d2d] hover:text-[#ff8a80]">
+                      <User className="w-5 h-5" />
+                      <span className="font-medium">Dashboard</span>
+                    </Link>
+                    {(user.role === 'instructor' || user.role === 'staff') && (
+                      <>
+                        <Link to="/instructor/posts" className="text-[#2d2d2d] hover:text-[#ff8a80]">
+                          <span className="font-medium text-sm">Manage Posts</span>
+                        </Link>
+                        <Link to="/instructor/payments" className="text-[#2d2d2d] hover:text-[#ff8a80]">
+                          <span className="font-medium text-sm">Payments</span>
+                        </Link>
+                      </>
+                    )}
+                    {user.role === 'admin' && (
+                      <>
+                        <Link to="/admin/posts" className="text-[#2d2d2d] hover:text-[#ff8a80]">
+                          <span className="font-medium text-sm">Review Posts</span>
+                        </Link>
+                        <Link to="/admin/panel" className="text-[#2d2d2d] hover:text-[#ff8a80]">
+                          <span className="font-medium text-sm">Admin Panel</span>
+                        </Link>
+                      </>
+                    )}
+                  <Link to="/profile" className="flex items-center space-x-2 text-[#2d2d2d] hover:text-[#ff8a80]">
+                    <span className="font-medium">Profile</span>
                   </Link>
                   <button onClick={handleLogout} className="text-gray-500 hover:text-[#2d2d2d]">
                     <LogOut className="w-5 h-5" />
@@ -121,10 +148,34 @@ export function Navigation() {
             <Link to="/instructors" className="block text-[#2d2d2d] font-medium py-2">
               Instructors
             </Link>
+            <Link to="/posts" className="block text-[#2d2d2d] font-medium py-2">
+              Posts
+            </Link>
             {user ? (
               <>
                 <Link to={getDashboardLink()} className="block text-[#2d2d2d] font-medium py-2">
                   Dashboard
+                </Link>
+                {user.role === 'student' && (
+                  <Link to="/student/support" className="block text-[#2d2d2d] font-medium py-2">
+                    Support & Issues
+                  </Link>
+                )}
+                {user.role === 'instructor' && (
+                  <Link to="/instructor/payments" className="block text-[#2d2d2d] font-medium py-2">
+                    Payments
+                  </Link>
+                )}
+                {user.role === 'admin' && (
+                  <Link to="/admin/panel" className="block text-[#2d2d2d] font-medium py-2">
+                    Admin Panel
+                  </Link>
+                )}
+                <Link to="/bundles" className="block text-[#2d2d2d] font-medium py-2">
+                  Course Bundles
+                </Link>
+                <Link to="/profile" className="block text-[#2d2d2d] font-medium py-2">
+                  My Profile
                 </Link>
                 <button onClick={handleLogout} className="block text-red-600 font-medium py-2">
                   Log out

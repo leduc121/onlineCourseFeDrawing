@@ -1,34 +1,52 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Star, Award, Clock, Heart, Zap, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-
-// Mock assigned courses data
-const ASSIGNED_COURSES = [
-    {
-        id: 1,
-        title: "Drawing Service - Gói Cơ Bản",
-        thumbnail: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=2071&auto=format&fit=crop",
-        progress: 35,
-        lessons: 12,
-        duration: "2h 30m",
-        color: "#FF6B6B"
-    },
-    {
-        id: 2,
-        title: "Màu Nước Cho Bé",
-        thumbnail: "https://images.unsplash.com/photo-1579783902614-a3fb39279c15?q=80&w=2070&auto=format&fit=crop",
-        progress: 0,
-        lessons: 8,
-        duration: "1h 45m",
-        color: "#4D96FF"
-    }
-];
+import { studentProfilesApi, paymentsApi } from '../api';
 
 export function StudentDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const [courses, setCourses] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCourses = async () => {
+            try {
+                const response = await studentProfilesApi.getMyEnrolledCourses();
+                // Assuming the backend returns standard ApiResponse wrapper
+                setCourses(response.data?.data || []);
+            } catch (error) {
+                console.error("Failed to fetch enrolled courses:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        const verifyPayment = async (sessionId: string) => {
+            try {
+                setIsLoading(true);
+                await paymentsApi.verifySession(sessionId);
+                // Clean up the URL
+                navigate('/dashboard', { replace: true });
+                // Re-fetch courses to show the new one
+                await fetchCourses();
+            } catch (error) {
+                console.error("Payment verification failed:", error);
+                setIsLoading(false);
+            }
+        };
+
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('session_id');
+
+        if (sessionId) {
+            verifyPayment(sessionId);
+        } else if (user?.role === 'student') {
+            fetchCourses();
+        }
+    }, [user, navigate]);
 
     return (
         <div className="min-h-screen bg-[#FFFBE6] p-6 lg:p-8 font-sans">
@@ -109,23 +127,32 @@ export function StudentDashboard() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {ASSIGNED_COURSES.map((course) => (
+                        {isLoading ? (
+                            <div className="col-span-full py-12 text-center text-gray-500 font-bold">
+                                Loading your magical courses... ✨
+                            </div>
+                        ) : courses.length === 0 ? (
+                            // Add a placeholder when no courses are found
+                            <div className="col-span-full text-center py-10">
+                                <p className="text-xl text-gray-500 font-bold">You don't have any courses yet. Ask your parents to assign you some!</p>
+                            </div>
+                        ) : courses.map((course: any) => (
                             <motion.div
                                 key={course.id}
                                 whileHover={{ y: -8 }}
                                 className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl shadow-indigo-100/50 group cursor-pointer border-4 border-white hover:border-[#5D5FEF] transition-colors"
-                                onClick={() => navigate(`/course/${course.id}`)}
+                                onClick={() => navigate(`/course/${course.id}/learn`)}
                             >
                                 <div className="relative h-56 overflow-hidden">
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
                                     <img
-                                        src={course.thumbnail}
+                                        src={course.thumbnailUrl || 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=2071&auto=format&fit=crop'}
                                         alt={course.title}
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-2"
                                     />
                                     <div className="absolute top-4 right-4 z-20 bg-white/95 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-[#2d2d2d] flex items-center gap-1 shadow-sm">
                                         <Clock size={14} className="text-[#5D5FEF]" />
-                                        {course.duration}
+                                        {course.durationMinutes || 0}m
                                     </div>
                                     <div className="absolute bottom-4 left-4 z-20 text-white">
                                         <div className="inline-block bg-[#5D5FEF] px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider mb-1">
@@ -140,12 +167,12 @@ export function StudentDashboard() {
                                 <div className="p-6">
                                     <div className="flex items-center justify-between text-sm font-bold text-gray-400 mb-2">
                                         <span>Progress</span>
-                                        <span className="text-[#5D5FEF]">{course.progress}%</span>
+                                        <span className="text-[#5D5FEF]">{course.progress || 0}%</span>
                                     </div>
                                     <div className="w-full bg-gray-100 rounded-full h-4 mb-6 overflow-hidden">
                                         <div
                                             className="bg-[#6BCB77] h-full rounded-full transition-all duration-1000 ease-out"
-                                            style={{ width: `${course.progress}%` }}
+                                            style={{ width: `${course.progress || 0}%` }}
                                         />
                                     </div>
 

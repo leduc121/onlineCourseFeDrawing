@@ -1,27 +1,105 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, CreditCard, Lock } from 'lucide-react';
+import { Trash2, Lock, AlertCircle } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
+import { cartApi, studentProfilesApi, default as api } from '../api';
+
 export function Checkout() {
-  const {
-    items,
-    removeFromCart,
-    total,
-    clearCart
-  } = useCart();
+  const { items, removeFromCart, total, clearCart } = useCart();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
-  const handlePayment = (e: React.FormEvent) => {
-    e.preventDefault();
+  const [children, setChildren] = useState<any[]>([]);
+  const [selectedChildId, setSelectedChildId] = useState<string>('');
+  const [couponCode, setCouponCode] = useState('');
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [couponMessage, setCouponMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    studentProfilesApi.getMyStudents()
+      .then(res => {
+        if (res.data?.data) {
+          setChildren(res.data.data);
+          
+          // Pre-select based on cart items first, then fallback to first student
+          const firstItemWithProfile = items.find(i => i.studentProfileId);
+          if (firstItemWithProfile?.studentProfileId) {
+            setSelectedChildId(firstItemWithProfile.studentProfileId);
+          } else if (res.data.data.length > 0) {
+            setSelectedChildId(res.data.data[0].id);
+          }
+        }
+      })
+      .catch(err => console.error("Failed to load students", err));
+  }, [items]);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setIsApplyingCoupon(true);
+    setCouponMessage(null);
+    try {
+      // Find a course to validate against (or just validate globally)
+      const firstCourseId = items[0]?.id;
+      if (!firstCourseId) return;
+
+      const res = await api.post('/coupons/validate', { code: couponCode, courseId: firstCourseId });
+      const discount = res.data?.data;
+
+      if (discount) {
+        // Apply to all items in cart (backend logic will handle eligibility)
+        for (const item of items) {
+          if (item.cartItemId) {
+            await cartApi.updateItem(item.cartItemId, { couponCode: couponCode });
+          }
+        }
+        // Force refresh cart to see new prices
+        window.location.reload(); // Simplest way to refresh all contexts
+        setCouponMessage({ text: 'Coupon applied successfully!', type: 'success' });
+      }
+    } catch (err: any) {
+      setCouponMessage({ 
+        text: err.response?.data?.message || 'Invalid or expired coupon code.', 
+        type: 'error' 
+      });
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const handleStripeCheckout = async () => {
+    if (!selectedChildId) {
+      alert("Please select a child profile first.");
+      return;
+    }
+    
     setIsProcessing(true);
-    // Simulate payment processing
-    setTimeout(() => {
-      setIsProcessing(false);
-      clearCart();
-      navigate('/dashboard');
-    }, 2000);
+    try {
+      // Sync all cart items to the selected student profile (Buy items only)
+      for (const item of items) {
+         if (item.itemType === 0 && item.studentProfileId !== selectedChildId && item.cartItemId) {
+            await cartApi.updateItem(item.cartItemId, {
+                studentProfileId: selectedChildId
+            });
+         }
+      }
+
+      const res = await cartApi.checkout({
+          successUrl: window.location.origin + '/dashboard?session_id={CHECKOUT_SESSION_ID}',
+          cancelUrl: window.location.origin + '/checkout'
+      });
+
+      if (res.data?.data?.sessionUrl) {
+          clearCart(); 
+          window.location.href = res.data.data.sessionUrl; 
+      } else {
+          alert("Failed to initialize payment session.");
+      }
+    } catch (error: any) {
+       console.error("Checkout Error:", error);
+       alert(error.response?.data?.message || "Checkout failed.");
+    } finally {
+       setIsProcessing(false);
+    }
   };
   if (items.length === 0) {
     return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">
@@ -56,8 +134,8 @@ export function Checkout() {
                     <p className="text-sm text-gray-500">{item.instructor}</p>
                   </div>
                   <div className="text-right ml-4">
-                    <p className="font-bold text-[#2d2d2d]">${item.price}</p>
-                    <button onClick={() => removeFromCart(item.id)} className="text-red-500 hover:text-red-700 text-sm mt-1 flex items-center">
+                    <p className="font-bold text-[#2d2d2d]">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}</p>
+                    <button onClick={() => removeFromCart(item.cartItemId || item.id)} className="text-red-500 hover:text-red-700 text-sm mt-1 flex items-center">
                       <Trash2 className="w-3 h-3 mr-1" /> Remove
                     </button>
                   </div>
@@ -65,37 +143,76 @@ export function Checkout() {
               <div className="p-6 bg-gray-50">
                 <div className="flex justify-between items-center text-xl font-bold text-[#2d2d2d]">
                   <span>Total</span>
-                  <span>${total}</span>
+                  <div className="text-right">
+                    <span>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(total)}</span>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Coupon Section */}
+            <div className="mt-6 bg-white p-6 border border-[#2d2d2d]/10 shadow-sm">
+              <h3 className="font-bold text-[#2d2d2d] mb-4">Promotional Code</h3>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="Enter code..." 
+                  className="flex-1 px-4 py-2 border-2 border-gray-100 rounded-lg focus:border-[#ff8a80] outline-none uppercase text-sm font-bold"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                />
+                <Button onClick={handleApplyCoupon} isLoading={isApplyingCoupon} disabled={!couponCode}>Apply</Button>
+              </div>
+              {couponMessage && (
+                <p className={`mt-2 text-sm font-bold ${couponMessage.type === 'success' ? 'text-green-600' : 'text-red-500'}`}>
+                  {couponMessage.text}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Payment Form */}
+          {/* Checkout Details & Actions */}
           <div>
             <h2 className="text-2xl font-serif font-bold text-[#2d2d2d] mb-6">
-              Payment Details
+              Payment & Assignment
             </h2>
-            <form onSubmit={handlePayment} className="bg-white p-8 border border-[#2d2d2d]/10 shadow-lg space-y-6">
-              <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4">
-                <Lock className="w-4 h-4" />
-                <span>Payments are secure and encrypted</span>
+            <div className="bg-white p-8 border border-[#2d2d2d]/10 shadow-lg space-y-6">
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">Assign these courses to:</label>
+                {children.length > 0 ? (
+                  <select 
+                    className="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-[#ff8a80] focus:ring focus:ring-[#ff8a80]/20 transition-colors"
+                    value={selectedChildId}
+                    onChange={(e) => setSelectedChildId(e.target.value)}
+                  >
+                    {children.map(kid => (
+                      <option key={kid.id} value={kid.id}>{kid.studentFullName || "Student"}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="text-red-500 text-sm flex items-center gap-2">
+                     <AlertCircle size={16} /> You need to add a Child Profile in your Dashboard first.
+                  </div>
+                )}
               </div>
 
-              <Input label="Cardholder Name" placeholder="John Doe" required />
-              <Input label="Card Number" placeholder="0000 0000 0000 0000" required />
-
-              <div className="grid grid-cols-2 gap-4">
-                <Input label="Expiry Date" placeholder="MM/YY" required />
-                <Input label="CVC" placeholder="123" required />
+              <div className="flex items-center space-x-2 text-sm text-gray-500 mb-4 pt-4 border-t border-gray-100">
+                <Lock className="w-4 h-4" />
+                <span>Secure payment powered by Stripe</span>
               </div>
 
               <div className="pt-4">
-                <Button type="submit" className="w-full" size="lg" isLoading={isProcessing}>
-                  Pay ${total}
+                <Button 
+                   onClick={handleStripeCheckout} 
+                   className="w-full" 
+                   size="lg" 
+                   isLoading={isProcessing}
+                   disabled={children.length === 0}
+                >
+                  Pay {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(total)} with Stripe
                 </Button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>
