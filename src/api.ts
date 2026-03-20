@@ -277,6 +277,7 @@ export const supportApi = {
 
 // Issues
 export const issuesApi = {
+    getMy: () => api.get('/Issues/my'),
     getAll: () => api.get('/Issues'),
     getById: (id: string) => api.get(`/Issues/${id}`),
     create: (data: any) => api.post('/Issues', data),
@@ -298,7 +299,8 @@ export const bundlesApi = {
 
 // Course Stages
 export const courseStagesApi = {
-    getAll: (courseId: string) => api.get(`/CourseStages?courseId=${courseId}`),
+    getAll: (courseId: string) => api.get(`/CourseStages/course/${courseId}`),
+    getByCourse: (courseId: string) => api.get(`/CourseStages/course/${courseId}`),
     getById: (id: string) => api.get(`/CourseStages/${id}`),
     create: (data: any) => api.post('/CourseStages', data),
     update: (id: string, data: any) => api.put(`/CourseStages/${id}`, data),

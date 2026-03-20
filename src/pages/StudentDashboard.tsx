@@ -3,20 +3,28 @@ import { motion } from 'framer-motion';
 import { Play, Star, Award, Clock, Heart, Zap, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { studentProfilesApi, paymentsApi } from '../api';
+import { courseStagesApi, paymentsApi, studentProfilesApi } from '../api';
+import { LearningRoadmap } from '../components/BundleAndStage';
 
 export function StudentDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [courses, setCourses] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedRoadmapCourseId, setSelectedRoadmapCourseId] = useState('');
+    const [roadmapStages, setRoadmapStages] = useState<any[]>([]);
+    const [isRoadmapLoading, setIsRoadmapLoading] = useState(false);
 
     useEffect(() => {
         const fetchCourses = async () => {
             try {
                 const response = await studentProfilesApi.getMyEnrolledCourses();
                 // Assuming the backend returns standard ApiResponse wrapper
-                setCourses(response.data?.data || []);
+                const nextCourses = response.data?.data || [];
+                setCourses(nextCourses);
+                if (nextCourses.length > 0) {
+                    setSelectedRoadmapCourseId((prev) => prev || nextCourses[0].id);
+                }
             } catch (error) {
                 console.error("Failed to fetch enrolled courses:", error);
             } finally {
@@ -47,6 +55,31 @@ export function StudentDashboard() {
             fetchCourses();
         }
     }, [user, navigate]);
+
+    useEffect(() => {
+        const fetchRoadmap = async () => {
+            if (!selectedRoadmapCourseId) {
+                setRoadmapStages([]);
+                return;
+            }
+
+            try {
+                setIsRoadmapLoading(true);
+                const response = await courseStagesApi.getByCourse(selectedRoadmapCourseId);
+                const nextStages = Array.isArray(response.data) ? response.data : response.data?.data || [];
+                setRoadmapStages(nextStages);
+            } catch (error) {
+                console.error("Failed to fetch course stages:", error);
+                setRoadmapStages([]);
+            } finally {
+                setIsRoadmapLoading(false);
+            }
+        };
+
+        if (user?.role === 'student') {
+            fetchRoadmap();
+        }
+    }, [selectedRoadmapCourseId, user]);
 
     return (
         <div className="min-h-screen bg-[#FFFBE6] p-6 lg:p-8 font-sans">
@@ -118,6 +151,59 @@ export function StudentDashboard() {
                         </button>
                     </div>
                 </motion.div>
+
+                <section className="grid gap-6 xl:grid-cols-[1.15fr_1.85fr]">
+                    <div className="rounded-[2.5rem] border-4 border-white bg-white/90 p-6 shadow-xl">
+                        <div className="flex items-center justify-between gap-4">
+                            <div>
+                                <p className="text-sm font-black uppercase tracking-[0.18em] text-[#5D5FEF]">Learning Roadmap</p>
+                                <h2 className="mt-2 text-3xl font-black text-[#2d2d2d]">Study in clear stages</h2>
+                            </div>
+                        </div>
+                        <p className="mt-3 text-sm font-medium leading-7 text-gray-500">
+                            Pick one enrolled course to see the planned stages and milestones. This helps the student know what comes next without forcing a lock.
+                        </p>
+
+                        <div className="mt-6 space-y-3">
+                            {courses.length === 0 ? (
+                                <div className="rounded-3xl border-2 border-dashed border-[#E0E7FF] bg-[#faf8f5] p-5 text-sm font-semibold text-gray-400">
+                                    Enroll in a course first to see the roadmap.
+                                </div>
+                            ) : (
+                                courses.map((course: any) => (
+                                    <button
+                                        key={course.id}
+                                        onClick={() => setSelectedRoadmapCourseId(course.id)}
+                                        className={`w-full rounded-3xl border-2 px-5 py-4 text-left transition ${
+                                            selectedRoadmapCourseId === course.id
+                                                ? 'border-[#5D5FEF] bg-[#EEF1FF]'
+                                                : 'border-[#F0F0F0] bg-[#faf8f5] hover:border-[#C7CCFF]'
+                                        }`}
+                                    >
+                                        <p className="text-base font-black text-[#2d2d2d]">{course.title}</p>
+                                        <p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-gray-400">
+                                            {course.instructorName || 'Instructor'}
+                                        </p>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="rounded-[2.5rem] border-4 border-white bg-white/90 p-6 shadow-xl">
+                        {isRoadmapLoading ? (
+                            <div className="flex min-h-[320px] items-center justify-center text-sm font-bold text-gray-400">
+                                Loading roadmap...
+                            </div>
+                        ) : roadmapStages.length > 0 ? (
+                            <LearningRoadmap stages={roadmapStages} />
+                        ) : (
+                            <div className="flex min-h-[320px] items-center justify-center rounded-[2rem] border-2 border-dashed border-[#E0E7FF] bg-[#faf8f5] p-8 text-center text-sm font-semibold leading-7 text-gray-400">
+                                No stages have been configured for this course yet.
+                            </div>
+                        )}
+                    </div>
+                </section>
 
                 {/* Course Grid */}
                 <div>

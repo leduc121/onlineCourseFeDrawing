@@ -87,11 +87,21 @@ export function Navigation() {
                       <User className="w-5 h-5" />
                       <span className="font-medium">Dashboard</span>
                     </Link>
+                    {user.role === 'student' && (
+                      <Link to="/student/support" className="text-[#2d2d2d] hover:text-[#ff8a80]">
+                        <span className="font-medium text-sm">Support</span>
+                      </Link>
+                    )}
                     {(user.role === 'instructor' || user.role === 'staff') && (
                       <>
                         <Link to="/instructor/posts" className="text-[#2d2d2d] hover:text-[#ff8a80]">
                           <span className="font-medium text-sm">Manage Posts</span>
                         </Link>
+                        {user.role === 'instructor' && (
+                          <Link to="/instructor/support" className="text-[#2d2d2d] hover:text-[#ff8a80]">
+                            <span className="font-medium text-sm">Support</span>
+                          </Link>
+                        )}
                         <Link to="/instructor/payments" className="text-[#2d2d2d] hover:text-[#ff8a80]">
                           <span className="font-medium text-sm">Payments</span>
                         </Link>
@@ -162,9 +172,14 @@ export function Navigation() {
                   </Link>
                 )}
                 {user.role === 'instructor' && (
-                  <Link to="/instructor/payments" className="block text-[#2d2d2d] font-medium py-2">
-                    Payments
-                  </Link>
+                  <>
+                    <Link to="/instructor/support" className="block text-[#2d2d2d] font-medium py-2">
+                      Support
+                    </Link>
+                    <Link to="/instructor/payments" className="block text-[#2d2d2d] font-medium py-2">
+                      Payments
+                    </Link>
+                  </>
                 )}
                 {user.role === 'admin' && (
                   <Link to="/admin/panel" className="block text-[#2d2d2d] font-medium py-2">

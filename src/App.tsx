@@ -93,6 +93,9 @@ export function App() {
             <Route path="/instructor/payments" element={<ProtectedRoute allowedRoles={['instructor']}>
               <PaymentManagementPage />
             </ProtectedRoute>} />
+            <Route path="/instructor/support" element={<ProtectedRoute allowedRoles={['instructor']}>
+              <SupportPage />
+            </ProtectedRoute>} />
 
             {/* Protected Admin Routes */}
             <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}>
