@@ -14,7 +14,7 @@ interface BankAccount {
   accountNumber: string;
   bankName: string;
   accountHolder: string;
-  accountType: string;
+  bankCode?: string;
   isVerified: boolean;
   isDefault: boolean;
 }

@@ -6,7 +6,7 @@ interface BankAccount {
   accountNumber: string;
   bankName: string;
   accountHolder: string;
-  accountType: string;
+  bankCode?: string;
   isVerified: boolean;
   isDefault: boolean;
 }
@@ -22,7 +22,7 @@ export const BankAccountForm: React.FC<BankAccountFormProps> = ({
     accountNumber: '',
     bankName: '',
     accountHolder: '',
-    accountType: 'Checking',
+    bankCode: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,7 +45,7 @@ export const BankAccountForm: React.FC<BankAccountFormProps> = ({
     try {
       await bankAccountsApi.create(formData);
       setSuccess('Bank account added successfully!');
-      setFormData({ accountNumber: '', bankName: '', accountHolder: '', accountType: 'Checking' });
+      setFormData({ accountNumber: '', bankName: '', accountHolder: '', bankCode: '' });
       setTimeout(() => {
         setSuccess('');
         onSuccess?.();
@@ -100,17 +100,15 @@ export const BankAccountForm: React.FC<BankAccountFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Account Type</label>
-          <select
-            name="accountType"
-            value={formData.accountType}
-            onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 border p-2"
-          >
-            <option value="Checking">Checking</option>
-            <option value="Savings">Savings</option>
-            <option value="Business">Business</option>
-          </select>
+        <label className="block text-sm font-medium text-gray-700">Bank Code</label>
+        <input
+          type="text"
+          name="bankCode"
+          value={formData.bankCode}
+          onChange={handleChange}
+          placeholder="Example: VCB, ACB, TCB"
+          className="mt-1 block w-full rounded-md border-gray-300 border p-2"
+        />
         </div>
 
         <button
@@ -172,7 +170,7 @@ export const BankAccountList: React.FC<{ accounts: BankAccount[]; onRefresh?: ()
               <div>
                 <p className="font-semibold">{account.bankName}</p>
                 <p className="text-sm text-gray-600">Account: ...{account.accountNumber.slice(-4)}</p>
-                <p className="text-sm text-gray-600">Type: {account.accountType}</p>
+                {account.bankCode && <p className="text-sm text-gray-600">Code: {account.bankCode}</p>}
                 {account.isDefault && <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mt-2">Default</span>}
                 {!account.isVerified && <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded mt-2 ml-2">Pending Verification</span>}
               </div>
