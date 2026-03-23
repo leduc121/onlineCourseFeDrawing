@@ -109,6 +109,9 @@ export function Navigation() {
                     )}
                     {user.role === 'admin' && (
                       <>
+                        <Link to="/admin/instructor-applications" className="text-[#2d2d2d] hover:text-[#ff8a80]">
+                          <span className="font-medium text-sm">Review Instructors</span>
+                        </Link>
                         <Link to="/admin/posts" className="text-[#2d2d2d] hover:text-[#ff8a80]">
                           <span className="font-medium text-sm">Review Posts</span>
                         </Link>
@@ -182,9 +185,17 @@ export function Navigation() {
                   </>
                 )}
                 {user.role === 'admin' && (
-                  <Link to="/admin/panel" className="block text-[#2d2d2d] font-medium py-2">
-                    Admin Panel
-                  </Link>
+                  <>
+                    <Link to="/admin/instructor-applications" className="block text-[#2d2d2d] font-medium py-2">
+                      Review Instructors
+                    </Link>
+                    <Link to="/admin/posts" className="block text-[#2d2d2d] font-medium py-2">
+                      Review Posts
+                    </Link>
+                    <Link to="/admin/panel" className="block text-[#2d2d2d] font-medium py-2">
+                      Admin Panel
+                    </Link>
+                  </>
                 )}
                 <Link to="/bundles" className="block text-[#2d2d2d] font-medium py-2">
                   Course Bundles

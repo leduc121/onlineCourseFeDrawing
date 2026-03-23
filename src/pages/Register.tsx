@@ -36,13 +36,18 @@ export function Register() {
       };
 
       await authApi.register(registerData);
-      
-      alert("Registration successful. Proceeding to login...");
+
+      const successMessage = formData.role === 'instructor'
+        ? 'Account created. Complete your instructor application after login.'
+        : "Registration successful. Proceeding to login...";
+      alert(successMessage);
       
       // Auto login after registration
       const role = await login(formData.email, formData.password);
       
-      if (role === 'instructor') {
+      if (formData.role === 'instructor') {
+         navigate('/instructor/apply');
+      } else if (role === 'instructor') {
          navigate('/instructor/dashboard');
       } else {
          navigate('/dashboard'); // customer/parent dashboard
@@ -122,7 +127,7 @@ export function Register() {
               login('newuser@gmail.com', formData.role);
               setIsLoading(false);
               if (formData.role === 'instructor') {
-                navigate('/instructor/dashboard');
+                navigate('/instructor/apply');
               } else {
                 navigate('/dashboard');
               }

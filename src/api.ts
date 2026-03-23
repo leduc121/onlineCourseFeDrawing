@@ -170,6 +170,15 @@ export const instructorProfilesApi = {
     update: (data: any) => api.put('/InstructorProfiles', data),
 };
 
+export const instructorApplicationsApi = {
+    submit: (data: any) => api.post('/instructor-applications', data),
+    getMy: () => api.get('/instructor-applications/my'),
+    getPending: () => api.get('/instructor-applications/pending'),
+    getById: (id: string) => api.get(`/instructor-applications/${id}`),
+    review: (id: string, data: { approved: boolean; reviewNotes?: string }) =>
+        api.put(`/instructor-applications/${id}/review`, data),
+};
+
 export const paymentsApi = {
     getMyTransactions: () => api.get('/payments/my-transactions'),
     createCheckoutSession: (data: any) => api.post('/payments/create-checkout-session', data),
@@ -275,6 +284,7 @@ export const supportApi = {
 export const issuesApi = {
     getMy: () => api.get('/Issues/my'),
     getAll: () => api.get('/Issues'),
+    getOpen: () => api.get('/Issues/open'),
     getById: (id: string) => api.get(`/Issues/${id}`),
     create: (data: any) => api.post('/Issues', data),
     updateStatus: (id: string, data: any) => api.put(`/Issues/${id}/status`, data),

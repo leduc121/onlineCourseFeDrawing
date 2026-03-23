@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi, instructorProfilesApi, studentProfilesApi } from '../api';
 import { Button } from '../components/ui/Button';
@@ -143,6 +144,12 @@ export function Profile() {
                   <div className="p-3 bg-white rounded-lg shadow-sm">
                     <Users className="w-6 h-6 text-blue-500" />
                   </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-blue-100">
+                  <p className="text-sm text-blue-700 mb-3">Want to teach on the platform? Submit your instructor application.</p>
+                  <Link to="/instructor/apply">
+                    <Button size="sm" variant="outline">Apply as Instructor</Button>
+                  </Link>
                 </div>
               </div>
             )}

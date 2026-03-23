@@ -16,6 +16,7 @@ import { MembershipCheckout } from './pages/MembershipCheckout';
 import { CustomerDashboard } from './pages/CustomerDashboard';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { InstructorDashboard } from './pages/InstructorDashboard';
+import { InstructorApplicationPage } from './pages/InstructorApplicationPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AboutUs } from './pages/AboutUs';
 import { ManageCourse } from './pages/ManageCourse';
@@ -25,6 +26,7 @@ import { PostList } from './pages/PostList';
 import { PostDetail } from './pages/PostDetail';
 import { ManagePost } from './pages/ManagePost';
 import { AdminPostReview } from './pages/AdminPostReview';
+import { AdminInstructorApplications } from './pages/AdminInstructorApplications';
 import { Membership } from './pages/Membership';
 import { PaymentManagementPage } from './pages/PaymentManagementPage';
 import { SupportPage } from './pages/SupportPage';
@@ -81,6 +83,9 @@ export function App() {
             <Route path="/instructor/dashboard" element={<ProtectedRoute allowedRoles={['instructor']}>
               <InstructorDashboard />
             </ProtectedRoute>} />
+            <Route path="/instructor/apply" element={<ProtectedRoute allowedRoles={['customer']}>
+              <InstructorApplicationPage />
+            </ProtectedRoute>} />
             <Route path="/instructor/create-course" element={<ProtectedRoute allowedRoles={['instructor']}>
               <ManageCourse />
             </ProtectedRoute>} />
@@ -103,6 +108,9 @@ export function App() {
             </ProtectedRoute>} />
             <Route path="/admin/posts" element={<ProtectedRoute allowedRoles={['admin']}>
               <AdminPostReview />
+            </ProtectedRoute>} />
+            <Route path="/admin/instructor-applications" element={<ProtectedRoute allowedRoles={['admin']}>
+              <AdminInstructorApplications />
             </ProtectedRoute>} />
             <Route path="/admin/panel" element={<ProtectedRoute allowedRoles={['admin']}>
               <AdminPanel />

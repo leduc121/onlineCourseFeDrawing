@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { coursesApi, uploadsApi, categoriesApi } from '../api';
 import { AssignmentGrader } from '../components/AssignmentGrader';
+import { CourseStageManager } from '../components/CourseStageManager';
 
 // ─── Quiz/Assignment sub-types ──────────────────────────────────
 interface QuizAnswer {
@@ -869,6 +870,10 @@ export function ManageCourse() {
                      </div>
                  )}
               </div>
+
+              {isEditMode && id && (
+                <CourseStageManager courseId={id} />
+              )}
            </div>
         </div>
       </div>

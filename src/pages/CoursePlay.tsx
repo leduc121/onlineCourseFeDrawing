@@ -16,6 +16,8 @@ export function CoursePlay() {
     const [isLoading, setIsLoading] = useState(true);
     const [showQuiz, setShowQuiz] = useState(false);
     const [showAssignment, setShowAssignment] = useState(false);
+    const [lessonWatchProgress, setLessonWatchProgress] = useState(0);
+    const [isCompletingLesson, setIsCompletingLesson] = useState(false);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -72,6 +74,10 @@ export function CoursePlay() {
         }
     }, [course, currentLesson]);
 
+    useEffect(() => {
+        setLessonWatchProgress(0);
+    }, [currentLesson?.id]);
+
     const handleLessonClick = async (lesson: any) => {
         setCurrentLesson(lesson);
         setShowQuiz(false);
@@ -81,27 +87,34 @@ export function CoursePlay() {
         }
     };
 
-    const handleVideoEnd = async () => {
-        if (!currentLesson?.id) return;
+    const refreshCourseProgress = async () => {
+        if (!id) return;
         try {
+            const progRes = await progressApi.getCourseProgress(id);
+            setProgress(progRes.data?.data);
+        } catch (error) {
+            console.error("Failed to refresh progress", error);
+        }
+    };
+
+    const markCurrentLessonComplete = async () => {
+        if (!currentLesson?.id || isCompletingLesson) return;
+        if ((progress?.completedLessonIds || []).includes(currentLesson.id)) return;
+
+        try {
+            setIsCompletingLesson(true);
             await progressApi.markLessonComplete(currentLesson.id);
-            if(id) {
-                const progRes = await progressApi.getCourseProgress(id);
-                setProgress(progRes.data?.data);
-            }
+            await refreshCourseProgress();
         } catch (error) {
             console.error("Failed to mark complete", error);
+        } finally {
+            setIsCompletingLesson(false);
         }
     };
 
     const handleQuizComplete = async () => {
         // Refresh progress after quiz completion
-        if (id) {
-            try {
-                const progRes = await progressApi.getCourseProgress(id);
-                setProgress(progRes.data?.data);
-            } catch (e) { console.error(e); }
-        }
+        await refreshCourseProgress();
     };
 
     if (isLoading) return <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center font-bold text-gray-500">Loading learning environment...</div>;
@@ -110,6 +123,7 @@ export function CoursePlay() {
 
     const completedIds = progress?.completedLessonIds || [];
     const completionPercentage = progress?.completionPercentage ?? progress?.progressPercentage ?? 0;
+    const isCurrentLessonCompleted = !!currentLesson?.id && completedIds.includes(currentLesson.id);
 
     return (
         <div className="min-h-screen bg-[#faf8f5] flex flex-col font-sans">
@@ -140,7 +154,17 @@ export function CoursePlay() {
                                  className="w-full max-h-full object-contain"
                                  controls
                                  autoPlay
-                                 onEnded={handleVideoEnd}
+                                 onTimeUpdate={(event) => {
+                                     const video = event.currentTarget;
+                                     if (!video.duration || Number.isNaN(video.duration)) return;
+                                     const nextProgress = Math.min(100, Math.round((video.currentTime / video.duration) * 100));
+                                     setLessonWatchProgress(nextProgress);
+
+                                     if (nextProgress >= 90) {
+                                         markCurrentLessonComplete();
+                                     }
+                                 }}
+                                 onEnded={markCurrentLessonComplete}
                               />
                          </div>
                     ) : (
@@ -153,7 +177,7 @@ export function CoursePlay() {
                     {/* Mark complete manually if video is not available */}
                     {currentLesson && !currentLesson.videoUrl && (
                         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-                            <button onClick={handleVideoEnd} className="bg-[#5D5FEF] text-white px-6 py-3 rounded-full font-bold hover:bg-[#4a4cc7] transition-colors shadow-lg shadow-indigo-500/30 flex items-center gap-2">
+                            <button onClick={markCurrentLessonComplete} className="bg-[#5D5FEF] text-white px-6 py-3 rounded-full font-bold hover:bg-[#4a4cc7] transition-colors shadow-lg shadow-indigo-500/30 flex items-center gap-2">
                                 <CheckCircle size={20} />
                                 Mark Lesson Complete
                             </button>
@@ -174,6 +198,21 @@ export function CoursePlay() {
                                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[#d8c9ba] md:text-base">
                                      {currentLesson.description || 'Continue the lesson, then open the quiz or assignment from the lesson outline whenever you want.'}
                                  </p>
+
+                                 {currentLesson.videoUrl && (
+                                     <div className="mt-4 max-w-xl">
+                                         <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.18em] text-[#cab5a0]">
+                                             <span>Lesson watch progress</span>
+                                             <span>{isCurrentLessonCompleted ? 'Completed' : `${lessonWatchProgress}%`}</span>
+                                         </div>
+                                         <div className="h-2 overflow-hidden rounded-full bg-[#2b221d]">
+                                             <div
+                                                 className={`h-full transition-all duration-300 ${isCurrentLessonCompleted ? 'bg-[#6BCB77]' : 'bg-[#f4c27a]'}`}
+                                                 style={{ width: `${isCurrentLessonCompleted ? 100 : lessonWatchProgress}%` }}
+                                             />
+                                         </div>
+                                     </div>
+                                 )}
 
                                  {(currentLesson.quiz || currentLesson.assignment) && (
                                      <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#3a2d25] bg-[#241b17] px-3 py-2 text-xs font-semibold text-[#f3dfc7]">

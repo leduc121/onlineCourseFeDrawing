@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import WithdrawalsManagement from '../components/WithdrawalsManagement';
+import AdminIssueManagement from '../components/AdminIssueManagement';
 
 type TabType = 'withdrawals' | 'users' | 'courses' | 'reports';
 
@@ -58,9 +59,7 @@ export function AdminPanel() {
           </div>
         )}
         {activeTab === 'reports' && (
-          <div className="text-center py-12">
-            <p className="text-gray-600">Reports coming soon...</p>
-          </div>
+          <AdminIssueManagement />
         )}
       </div>
     </div>
