@@ -1,4 +1,5 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
+import { authApi } from '../api';
 export type UserRole = 'customer' | 'instructor' | 'staff' | 'admin' | 'student';
 export interface User {
   id: string;
@@ -6,6 +7,7 @@ export interface User {
   email: string;
   role: UserRole;
   avatar?: string;
+  token?: string;
 }
 interface AuthContextType {
   user: User | null;
@@ -15,7 +17,6 @@ interface AuthContextType {
   isLoading: boolean;
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-import { authApi } from '../api';
 
 export function AuthProvider({
   children

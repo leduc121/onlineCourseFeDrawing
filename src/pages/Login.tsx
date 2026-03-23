@@ -13,8 +13,10 @@ export function Login() {
   const [password, setPassword] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
     try {
       const loggedInRole = await login(email, password);
@@ -53,6 +55,11 @@ export function Login() {
       </div>
 
       <form className="mt-8 space-y-6 bg-white p-8 border-2 border-[#2d2d2d]/5 shadow-xl" onSubmit={handleSubmit}>
+        {error && (
+          <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md">
+            {error}
+          </div>
+        )}
         <div className="space-y-4">
           <Input label="Email address" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" />
 
